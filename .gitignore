@@ -1,0 +1,9 @@
+﻿# Build
+ProyectoMago/build/
+*.class
+
+# NetBeans private
+ProyectoMago/nbproject/private/
+
+# Archives / local clutter
+*.zip
