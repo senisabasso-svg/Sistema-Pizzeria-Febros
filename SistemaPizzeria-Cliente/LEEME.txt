@@ -1,0 +1,24 @@
+﻿SISTEMA PIZZERIA - INSTALACION EN PC DEL CLIENTE
+================================================
+
+REQUISITO
+- Tener instalado Java 17 o superior
+  (https://www.java.com o Adoptium/Temurin)
+
+COMO USAR
+1. Descomprimi esta carpeta donde quieras (ej: C:\SistemaPizzeria)
+2. Doble clic en Iniciar.bat
+3. En "Configuracion comercio":
+   - Poné el nombre del local
+   - Subí el logo
+   - Elegí la impresora de tickets
+4. En "Productos" cargá el menú y precios
+
+CONTENIDO
+- ProyectoMago.jar     -> el programa
+- lib\                 -> driver SQLite
+- prueba.db            -> base VACIA (sin productos ni ventas)
+- Iniciar.bat          -> arranque
+
+NOTA
+No hace falta internet. Todo corre local en la PC.

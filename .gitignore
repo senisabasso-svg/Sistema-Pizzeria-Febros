@@ -7,3 +7,11 @@ ProyectoMago/nbproject/private/
 
 # Archives / local clutter
 *.zip
+
+# Bases locales de desarrollo (el paquete cliente trae una vacía)
+ProyectoMago/prueba.db
+ProyectoMago/dist/prueba.db
+
+# Config local del cliente (nombre, logo, impresora)
+**/comercio.properties
+**/logo_comercio.*
