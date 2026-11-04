@@ -15,6 +15,12 @@ public class ProyectoMago {
         }
 
         SwingUtilities.invokeLater(() -> {
+            // Gate de licencia: caché 2 días o consulta API.
+            if (!LicenseGate.ensureCanRun(null)) {
+                System.exit(0);
+                return;
+            }
+
             String nombre = ComercioConfig.get().getNombreComercio();
             JFrame frame = new JFrame(nombre + " · Sistema de caja");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

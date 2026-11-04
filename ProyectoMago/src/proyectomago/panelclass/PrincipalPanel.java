@@ -88,7 +88,7 @@ public class PrincipalPanel extends JPanel {
 
         JPanel titles = new JPanel(new BorderLayout());
         titles.setOpaque(false);
-        JLabel subtitle = new JLabel("Caja · pedidos · delivery");
+        JLabel subtitle = new JLabel("Caja · pedidos · stock · delivery");
         subtitle.setFont(UiTheme.SMALL);
         subtitle.setForeground(UiTheme.MUTED);
         titles.add(lblTituloComercio, BorderLayout.NORTH);
@@ -99,12 +99,18 @@ public class PrincipalPanel extends JPanel {
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actions.setOpaque(false);
+        JButton btnCaja = secondaryButton("Caja");
+        JButton btnStock = secondaryButton("Stock");
         JButton btnProductos = secondaryButton("Productos");
         JButton btnInforme = secondaryButton("Informes");
         JButton btnConfig = secondaryButton("Configuración comercio");
+        btnCaja.addActionListener(e -> abrirCaja());
+        btnStock.addActionListener(e -> abrirStock());
         btnProductos.addActionListener(e -> abrirProductos());
         btnInforme.addActionListener(e -> abrirInformes());
         btnConfig.addActionListener(e -> abrirConfiguracion());
+        actions.add(btnCaja);
+        actions.add(btnStock);
         actions.add(btnProductos);
         actions.add(btnInforme);
         actions.add(btnConfig);
@@ -421,6 +427,7 @@ public class PrincipalPanel extends JPanel {
             } else {
                 sumoInforme(conn, ahora, totalStr);
             }
+            registrarDetalleVenta(ahora);
             return true;
         } catch (Exception e) {
             System.out.println("Error al registrar venta: " + e.getMessage());
@@ -428,10 +435,70 @@ public class PrincipalPanel extends JPanel {
         }
     }
 
+    /** Guarda ítems con tipo/costo para informes de ganancia y gráficos. */
+    private void registrarDetalleVenta(Date fecha) {
+        String ahora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(fecha);
+        String sqlMeta = "SELECT COALESCE(tipo, 'Otro') AS tipo, COALESCE(costo, 0) AS costo "
+                + "FROM menuPrecios WHERE nombre = ? LIMIT 1";
+        String sqlIns = "INSERT INTO venta_detalle "
+                + "(fecha, producto, tipo, cantidad, precio_unit, costo_unit, subtotal, costo_total) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection connection = new conection().getConnection()) {
+            for (Pedido p : listaPedidos) {
+                String tipo = "Otro";
+                double costoUnit = 0;
+                try (PreparedStatement meta = connection.prepareStatement(sqlMeta)) {
+                    meta.setString(1, p.getNombreProd());
+                    try (ResultSet rs = meta.executeQuery()) {
+                        if (rs.next()) {
+                            tipo = rs.getString("tipo");
+                            if (tipo == null || tipo.isBlank()) {
+                                tipo = "Otro";
+                            }
+                            costoUnit = rs.getDouble("costo");
+                        }
+                    }
+                }
+                double precioUnit = p.getPrecioUnitario();
+                double subtotal = p.getSubtotal();
+                double costoTotal = costoUnit * p.getCantidad();
+                try (PreparedStatement ins = connection.prepareStatement(sqlIns)) {
+                    ins.setString(1, ahora);
+                    ins.setString(2, p.getNombreProd());
+                    ins.setString(3, tipo);
+                    ins.setInt(4, p.getCantidad());
+                    ins.setDouble(5, precioUnit);
+                    ins.setDouble(6, costoUnit);
+                    ins.setDouble(7, subtotal);
+                    ins.setDouble(8, costoTotal);
+                    ins.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al guardar detalle de venta: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
     private void abrirInformes() {
         Window w = SwingUtilities.getWindowAncestor(this);
         JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
         InformesDialog dialog = new InformesDialog(frame);
+        dialog.setVisible(true);
+    }
+
+    private void abrirCaja() {
+        Window w = SwingUtilities.getWindowAncestor(this);
+        JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
+        CajaDialog dialog = new CajaDialog(frame);
+        dialog.setVisible(true);
+    }
+
+    private void abrirStock() {
+        Window w = SwingUtilities.getWindowAncestor(this);
+        JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
+        StockDialog dialog = new StockDialog(frame);
         dialog.setVisible(true);
     }
 
