@@ -88,7 +88,7 @@ public class MermaDialog extends JDialog {
         c.gridx = 0; c.gridy = 0;
         form.add(label("Ítem (stock)"), c);
         c.gridx = 1;
-        comboItem.setFont(UiTheme.BODY);
+        UiTheme.styleCombo(comboItem);
         comboItem.setPreferredSize(new Dimension(220, 34));
         form.add(comboItem, c);
 
@@ -101,7 +101,7 @@ public class MermaDialog extends JDialog {
         c.gridx = 0; c.gridy = 1;
         form.add(label("Motivo"), c);
         c.gridx = 1;
-        comboMotivo.setFont(UiTheme.BODY);
+        UiTheme.styleCombo(comboMotivo);
         comboMotivo.setPreferredSize(new Dimension(220, 34));
         form.add(comboMotivo, c);
 
@@ -291,7 +291,9 @@ public class MermaDialog extends JDialog {
     private static void styleField(JTextField f) {
         f.setFont(UiTheme.BODY);
         f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(UiTheme.SURFACE);
+        f.setBackground(UiTheme.SURFACE_ALT);
+        f.setForeground(UiTheme.INK);
+        f.setCaretColor(UiTheme.ACCENT);
         f.setPreferredSize(new Dimension(100, 34));
     }
 

@@ -88,7 +88,7 @@ public class PrincipalPanel extends JPanel {
 
         JPanel titles = new JPanel(new BorderLayout());
         titles.setOpaque(false);
-        JLabel subtitle = new JLabel("Panadería · caja · stock · proveedores");
+        JLabel subtitle = new JLabel("Gestión panaderías · caja · stock · proveedores");
         subtitle.setFont(UiTheme.SMALL);
         subtitle.setForeground(UiTheme.MUTED);
         titles.add(lblTituloComercio, BorderLayout.NORTH);
@@ -146,7 +146,7 @@ public class PrincipalPanel extends JPanel {
 
         Window w = SwingUtilities.getWindowAncestor(this);
         if (w instanceof JFrame) {
-            ((JFrame) w).setTitle(cfg.getNombreComercio() + " · Sistema panadería");
+            ((JFrame) w).setTitle(cfg.getNombreComercio() + " · Gestión panaderías");
         }
     }
 
@@ -252,8 +252,8 @@ public class PrincipalPanel extends JPanel {
         listaUI.setFont(UiTheme.MONO);
         listaUI.setBackground(UiTheme.SURFACE);
         listaUI.setForeground(UiTheme.INK);
-        listaUI.setSelectionBackground(new Color(0xF2D6CF));
-        listaUI.setSelectionForeground(UiTheme.INK);
+        listaUI.setSelectionBackground(UiTheme.ACCENT);
+        listaUI.setSelectionForeground(Color.WHITE);
         listaUI.setFixedCellHeight(28);
         JScrollPane scroll = new JScrollPane(listaUI);
         scroll.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
@@ -706,16 +706,15 @@ public class PrincipalPanel extends JPanel {
 
     private static void styleField(JTextField f) {
         f.setFont(UiTheme.BODY);
-        f.setBackground(Color.WHITE);
+        f.setBackground(UiTheme.SURFACE_ALT);
         f.setForeground(UiTheme.INK);
+        f.setCaretColor(UiTheme.ACCENT);
         f.setBorder(UiTheme.fieldBorder());
-        f.setPreferredSize(new Dimension(10, 34));
+        f.setPreferredSize(new Dimension(10, 38));
     }
 
     private static void styleCombo(JComboBox<?> combo) {
-        combo.setFont(UiTheme.BODY);
-        combo.setBackground(Color.WHITE);
-        combo.setPreferredSize(new Dimension(10, 34));
+        UiTheme.styleCombo(combo);
     }
 
     private static JButton primaryButton(String text) {

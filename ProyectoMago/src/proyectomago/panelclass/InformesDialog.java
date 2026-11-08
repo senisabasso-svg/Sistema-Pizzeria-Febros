@@ -159,7 +159,7 @@ public class InformesDialog extends JDialog {
         c.gridx = 4;
         row.add(label("Tipo"), c);
         c.gridx = 5;
-        comboTipo.setFont(UiTheme.BODY);
+        UiTheme.styleCombo(comboTipo);
         comboTipo.setPreferredSize(new Dimension(120, 32));
         row.add(comboTipo, c);
 
@@ -562,7 +562,9 @@ public class InformesDialog extends JDialog {
     private static void styleField(JTextField f) {
         f.setFont(UiTheme.BODY);
         f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(Color.WHITE);
+        f.setBackground(UiTheme.SURFACE_ALT);
+        f.setForeground(UiTheme.INK);
+        f.setCaretColor(UiTheme.ACCENT);
         f.setPreferredSize(new Dimension(90, 32));
     }
 

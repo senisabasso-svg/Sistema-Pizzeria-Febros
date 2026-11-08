@@ -352,21 +352,23 @@ public class ConfiguracionDialog extends JDialog {
     private static void styleField(JTextField f) {
         f.setFont(UiTheme.BODY);
         f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(Color.WHITE);
+        f.setBackground(UiTheme.SURFACE_ALT);
+        f.setForeground(UiTheme.INK);
+        f.setCaretColor(UiTheme.ACCENT);
         f.setPreferredSize(new Dimension(10, 34));
     }
 
     private static void stylePassword(JPasswordField f) {
         f.setFont(UiTheme.BODY);
         f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(Color.WHITE);
+        f.setBackground(UiTheme.SURFACE_ALT);
+        f.setForeground(UiTheme.INK);
+        f.setCaretColor(UiTheme.ACCENT);
         f.setPreferredSize(new Dimension(10, 34));
     }
 
     private static void styleCombo(JComboBox<?> combo) {
-        combo.setFont(UiTheme.BODY);
-        combo.setBackground(Color.WHITE);
-        combo.setPreferredSize(new Dimension(10, 34));
+        UiTheme.styleCombo(combo);
     }
 
     private static JButton primaryButton(String text) {
