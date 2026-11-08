@@ -116,7 +116,7 @@ public class CajaDialog extends JDialog {
         c.gridx = 0; c.gridy = 0;
         form.add(label("Tipo"), c);
         c.gridx = 1;
-        comboTipo.setFont(UiTheme.BODY);
+        UiTheme.styleCombo(comboTipo);
         comboTipo.setPreferredSize(new Dimension(120, 32));
         form.add(comboTipo, c);
 

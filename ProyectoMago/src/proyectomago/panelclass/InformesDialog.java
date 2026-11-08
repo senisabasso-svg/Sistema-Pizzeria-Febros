@@ -159,7 +159,7 @@ public class InformesDialog extends JDialog {
         c.gridx = 4;
         row.add(label("Tipo"), c);
         c.gridx = 5;
-        comboTipo.setFont(UiTheme.BODY);
+        UiTheme.styleCombo(comboTipo);
         comboTipo.setPreferredSize(new Dimension(120, 32));
         row.add(comboTipo, c);
 

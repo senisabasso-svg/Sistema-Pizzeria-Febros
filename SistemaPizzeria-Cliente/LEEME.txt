@@ -1,4 +1,4 @@
-﻿SISTEMA PIZZERIA - INSTALACION EN PC DEL CLIENTE
+SISTEMA PIZZERIA - INSTALACION EN PC DEL CLIENTE
 ================================================
 
 REQUISITO
@@ -9,15 +9,16 @@ COMO USAR
 1. Descomprimi esta carpeta donde quieras (ej: C:\SistemaPizzeria)
 2. Doble clic en Iniciar.bat
 3. En "Configuracion comercio":
-   - Poné el nombre del local
-   - Subí el logo
-   - Elegí la impresora de tickets
-4. En "Productos" cargá el menú y precios
+   - Pone el nombre del local
+   - Subi el logo
+   - Elegi la impresora de tickets
+4. En "Productos" carga el menu y precios
 
 CONTENIDO
-- ProyectoMago.jar     -> el programa
+- ProyectoMago.jar     -> el programa (ultima version)
 - lib\                 -> driver SQLite
 - prueba.db            -> base VACIA (sin productos ni ventas)
+- login_bg.jpg         -> fondo del login
 - Iniciar.bat          -> arranque
 
 NOTA

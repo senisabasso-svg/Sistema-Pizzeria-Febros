@@ -1,16 +1,24 @@
 package proyectomago.panelclass;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JList;
+import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicArrowButton;
 import javax.swing.plaf.basic.BasicButtonUI;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 
 /**
  * Paleta FEBROS Punto de Venta: navy profundo + naranja vibrante + blanco.
@@ -95,6 +103,63 @@ public final class UiTheme {
         ));
         attachPressFeedback(b, BTN_SECONDARY_BG, BTN_SECONDARY_HOVER, INK);
         return b;
+    }
+
+    /**
+     * Combo legible en dark mode.
+     * En Windows el L&F pinta fondo blanco y, si el foreground es claro, el texto desaparece.
+     * Se fuerza BasicComboBoxUI + editor opaco navy con texto claro.
+     */
+    public static void styleCombo(JComboBox<?> combo) {
+        combo.setUI(new BasicComboBoxUI() {
+            @Override
+            protected JButton createArrowButton() {
+                JButton button = new BasicArrowButton(
+                        BasicArrowButton.SOUTH, SURFACE_ALT, BORDER_STRONG, INK, SURFACE_ALT);
+                button.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
+                button.setOpaque(true);
+                return button;
+            }
+        });
+        combo.setFont(BODY);
+        combo.setBackground(SURFACE_ALT);
+        combo.setForeground(INK);
+        combo.setOpaque(true);
+        combo.setBorder(BorderFactory.createLineBorder(BORDER_STRONG, 1));
+        combo.setPreferredSize(new Dimension(10, 38));
+        combo.setEditable(true);
+        Component editor = combo.getEditor().getEditorComponent();
+        if (editor instanceof JTextField) {
+            JTextField tf = (JTextField) editor;
+            tf.setFont(BODY);
+            tf.setBackground(SURFACE_ALT);
+            tf.setForeground(INK);
+            tf.setCaretColor(INK);
+            tf.setDisabledTextColor(INK);
+            tf.setSelectedTextColor(Color.WHITE);
+            tf.setSelectionColor(ACCENT);
+            tf.setBorder(new EmptyBorder(8, 10, 8, 10));
+            tf.setOpaque(true);
+            tf.setEditable(false);
+        }
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setFont(BODY);
+                setOpaque(true);
+                setBorder(new EmptyBorder(8, 10, 8, 10));
+                if (isSelected) {
+                    setBackground(ACCENT);
+                    setForeground(Color.WHITE);
+                } else {
+                    setBackground(SURFACE_ALT);
+                    setForeground(INK);
+                }
+                return this;
+            }
+        });
     }
 
     private static JButton baseButton(String text, Font font) {

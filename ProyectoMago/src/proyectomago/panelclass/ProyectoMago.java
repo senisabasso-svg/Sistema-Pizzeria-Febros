@@ -10,6 +10,14 @@ public class ProyectoMago {
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            UIManager.put("ComboBox.background", UiTheme.SURFACE_ALT);
+            UIManager.put("ComboBox.foreground", UiTheme.INK);
+            UIManager.put("ComboBox.selectionBackground", UiTheme.ACCENT);
+            UIManager.put("ComboBox.selectionForeground", java.awt.Color.WHITE);
+            UIManager.put("ComboBox.buttonBackground", UiTheme.SURFACE_ALT);
+            UIManager.put("TextField.background", UiTheme.SURFACE_ALT);
+            UIManager.put("TextField.foreground", UiTheme.INK);
+            UIManager.put("TextField.caretForeground", UiTheme.INK);
         } catch (Exception e) {
             e.printStackTrace();
         }

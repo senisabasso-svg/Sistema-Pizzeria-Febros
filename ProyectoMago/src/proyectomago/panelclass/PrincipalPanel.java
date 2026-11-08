@@ -899,10 +899,7 @@ public class PrincipalPanel extends JPanel {
     }
 
     private static void styleCombo(JComboBox<?> combo) {
-        combo.setFont(UiTheme.BODY);
-        combo.setBackground(UiTheme.SURFACE_ALT);
-        combo.setForeground(UiTheme.INK);
-        combo.setPreferredSize(new Dimension(10, 38));
+        UiTheme.styleCombo(combo);
     }
 
     private static JButton primaryButton(String text) {
