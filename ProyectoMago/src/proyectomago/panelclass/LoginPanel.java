@@ -21,7 +21,7 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
 /**
- * Pantalla de bienvenida / iniciar sesiÃ³n con branding FEBROS.
+ * Pantalla de bienvenida / iniciar sesión con branding FEBROS.
  */
 public class LoginPanel extends JPanel {
 
@@ -82,7 +82,7 @@ public class LoginPanel extends JPanel {
         local.setFont(UiTheme.BODY);
         local.setForeground(UiTheme.MUTED);
 
-        JButton btn = UiTheme.primaryButton("Iniciar sesiÃ³n");
+        JButton btn = UiTheme.primaryButton("Iniciar sesión");
         btn.setFont(UiTheme.BODY_BOLD);
         btn.setPreferredSize(new Dimension(10, 46));
         btn.addActionListener(e -> {

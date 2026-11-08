@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.awt.Component;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -33,10 +34,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SpinnerDateModel;
+import javax.swing.plaf.basic.BasicTableHeaderUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -73,12 +76,12 @@ public class InformesDialog extends JDialog {
 
     public InformesDialog(JFrame owner) {
         super(owner, "Informes panadería · ventas y ganancia", true);
-        setSize(980, 720);
-        setMinimumSize(new Dimension(860, 620));
+        setSize(1020, 780);
+        setMinimumSize(new Dimension(900, 680));
         setLocationRelativeTo(owner);
         getContentPane().setBackground(UiTheme.BG);
-        setLayout(new BorderLayout(14, 14));
-        ((JPanel) getContentPane()).setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
+        setLayout(new BorderLayout(12, 12));
+        ((JPanel) getContentPane()).setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
 
         Calendar cal = Calendar.getInstance();
         Date hoy = cal.getTime();
@@ -108,28 +111,33 @@ public class InformesDialog extends JDialog {
         north.add(buildFiltros(), BorderLayout.NORTH);
         north.add(buildKpis(), BorderLayout.CENTER);
 
-        JPanel center = new JPanel(new BorderLayout(12, 12));
-        center.setOpaque(false);
-
         JPanel charts = new JPanel(new GridLayout(1, 2, 14, 0));
         charts.setOpaque(false);
         charts.add(chartTipo);
         charts.add(chartResultado);
-        charts.setPreferredSize(new Dimension(10, 290));
+        charts.setMinimumSize(new Dimension(10, 180));
+        charts.setPreferredSize(new Dimension(10, 230));
 
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
         scroll.getViewport().setBackground(UiTheme.SURFACE);
+        scroll.setMinimumSize(new Dimension(10, 160));
+        scroll.setPreferredSize(new Dimension(10, 220));
 
-        center.add(charts, BorderLayout.NORTH);
-        center.add(scroll, BorderLayout.CENTER);
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, charts, scroll);
+        split.setResizeWeight(0.42);
+        split.setDividerSize(8);
+        split.setBorder(null);
+        split.setOpaque(false);
+        split.setContinuousLayout(true);
 
         add(north, BorderLayout.NORTH);
-        add(center, BorderLayout.CENTER);
+        add(split, BorderLayout.CENTER);
         add(buildFooter(), BorderLayout.SOUTH);
 
         cargarTiposCombo();
         buscar();
+        javax.swing.SwingUtilities.invokeLater(() -> split.setDividerLocation(0.48));
     }
 
     private JPanel buildFiltros() {
@@ -533,15 +541,43 @@ public class InformesDialog extends JDialog {
         table.setRowHeight(30);
         table.setBackground(UiTheme.SURFACE);
         table.setForeground(UiTheme.INK);
-        table.setGridColor(new Color(0xE8DCCE));
-        table.setSelectionBackground(new Color(0xF2D6CF));
-        table.setSelectionForeground(UiTheme.INK);
+        table.setGridColor(UiTheme.BORDER);
+        table.setSelectionBackground(UiTheme.ACCENT);
+        table.setSelectionForeground(Color.WHITE);
+        table.setFillsViewportHeight(true);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
+
         JTableHeader header = table.getTableHeader();
+        header.setUI(new BasicTableHeaderUI());
         header.setFont(UiTheme.BODY_BOLD);
+        header.setOpaque(true);
         header.setBackground(UiTheme.SURFACE_ALT);
         header.setForeground(UiTheme.INK);
+        header.setReorderingAllowed(false);
+        header.setPreferredSize(new Dimension(10, 34));
+        header.setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel l = (JLabel) super.getTableCellRendererComponent(
+                        tbl, value, isSelected, hasFocus, row, column);
+                l.setOpaque(true);
+                l.setBackground(UiTheme.SURFACE_ALT);
+                l.setForeground(UiTheme.INK);
+                l.setFont(UiTheme.BODY_BOLD);
+                l.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, UiTheme.BORDER),
+                        BorderFactory.createEmptyBorder(6, 10, 6, 10)
+                ));
+                return l;
+            }
+        });
+
         DefaultTableCellRenderer right = new DefaultTableCellRenderer();
         right.setHorizontalAlignment(JLabel.RIGHT);
+        right.setBackground(UiTheme.SURFACE);
+        right.setForeground(UiTheme.INK);
         for (int col = 1; col <= 4; col++) {
             table.getColumnModel().getColumn(col).setCellRenderer(right);
         }
