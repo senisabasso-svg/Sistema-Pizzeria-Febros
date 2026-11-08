@@ -32,14 +32,14 @@ public class DonutChartPanel extends JPanel {
     }
 
     private static final Color[] PALETTE = {
-        new Color(0xC23B22),
-        new Color(0x2F6B4F),
-        new Color(0xC9922A),
-        new Color(0x8B5E3C),
-        new Color(0x3F6F8C),
-        new Color(0xA84B2F),
-        new Color(0x5C6B73),
-        new Color(0x6B8F71)
+        new Color(0xFF8A1F),
+        new Color(0x3D8BFF),
+        new Color(0x3DDC97),
+        new Color(0xFFB020),
+        new Color(0xFF5C7A),
+        new Color(0x7C9CFF),
+        new Color(0xF0A35E),
+        new Color(0x4CC9F0)
     };
 
     private final List<Slice> slices = new ArrayList<>();
@@ -114,7 +114,7 @@ public class DonutChartPanel extends JPanel {
         int y = cy - outer / 2;
 
         if (total <= 0 || slices.isEmpty()) {
-            g2.setColor(new Color(0xEDE4D8));
+            g2.setColor(new Color(0x2A3344));
             g2.fillOval(x, y, outer, outer);
             g2.setColor(UiTheme.SURFACE);
             g2.fillOval(cx - inner / 2, cy - inner / 2, inner, inner);
@@ -145,7 +145,7 @@ public class DonutChartPanel extends JPanel {
 
             // Anillo sutil
             g2.setStroke(new BasicStroke(1.2f));
-            g2.setColor(new Color(0xE8DCCE));
+            g2.setColor(UiTheme.BORDER);
             g2.drawOval(cx - inner / 2, cy - inner / 2, inner, inner);
 
             // Texto centro

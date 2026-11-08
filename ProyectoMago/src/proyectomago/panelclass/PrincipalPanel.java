@@ -53,6 +53,8 @@ public class PrincipalPanel extends JPanel {
     private final JTextField txtPrecioUnitario = new JTextField();
     private final JTextField txtDireccion = new JTextField();
     private final JTextField txtNotaCliente = new JTextField();
+    private final JComboBox<KeyValue> comboCliente = new JComboBox<>();
+    private final JLabel lblClienteInfo = new JLabel("Sin cliente asociado");
     private final JLabel lblTotal = new JLabel("$0");
     private final JList<Pedido> listaUI = new JList<>(listModel);
     private final JLabel lblLogo = new JLabel();
@@ -64,31 +66,41 @@ public class PrincipalPanel extends JPanel {
 
     public PrincipalPanel() {
         setBackground(UiTheme.BG);
-        setLayout(new BorderLayout(12, 12));
-        setBorder(new EmptyBorder(14, 16, 14, 16));
+        setLayout(new BorderLayout(14, 14));
+        setBorder(new EmptyBorder(12, 14, 14, 14));
 
         add(buildHeader(), BorderLayout.NORTH);
         add(buildBody(), BorderLayout.CENTER);
 
         aplicarBranding();
         comboProducto.addActionListener(productoListener);
+        comboCliente.addActionListener(e -> onClienteSeleccionado());
         cargarMenu();
+        cargarClientes();
     }
 
     private JPanel buildHeader() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
+        JPanel header = new JPanel(new BorderLayout(12, 0));
+        header.setBackground(UiTheme.SURFACE);
+        header.setBorder(UiTheme.headerBorder());
 
-        JPanel brand = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        JPanel brand = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 0));
         brand.setOpaque(false);
 
-        lblLogo.setPreferredSize(new Dimension(48, 48));
+        lblLogo.setPreferredSize(new Dimension(52, 52));
+        lblLogo.setHorizontalAlignment(JLabel.CENTER);
+        lblLogo.setOpaque(true);
+        lblLogo.setBackground(UiTheme.ACCENT_SOFT);
+        lblLogo.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UiTheme.BORDER, 1),
+                new EmptyBorder(4, 4, 4, 4)
+        ));
         lblTituloComercio.setFont(UiTheme.TITLE);
         lblTituloComercio.setForeground(UiTheme.INK);
 
-        JPanel titles = new JPanel(new BorderLayout());
+        JPanel titles = new JPanel(new BorderLayout(0, 2));
         titles.setOpaque(false);
-        JLabel subtitle = new JLabel("Caja · pedidos · stock · delivery");
+        JLabel subtitle = new JLabel("Punto de Venta · caja · pedidos · delivery");
         subtitle.setFont(UiTheme.SMALL);
         subtitle.setForeground(UiTheme.MUTED);
         titles.add(lblTituloComercio, BorderLayout.NORTH);
@@ -97,20 +109,23 @@ public class PrincipalPanel extends JPanel {
         brand.add(lblLogo);
         brand.add(titles);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         actions.setOpaque(false);
         JButton btnCaja = secondaryButton("Caja");
         JButton btnStock = secondaryButton("Stock");
+        JButton btnClientes = secondaryButton("Clientes");
         JButton btnProductos = secondaryButton("Productos");
         JButton btnInforme = secondaryButton("Informes");
-        JButton btnConfig = secondaryButton("Configuración comercio");
+        JButton btnConfig = secondaryButton("Configuración");
         btnCaja.addActionListener(e -> abrirCaja());
         btnStock.addActionListener(e -> abrirStock());
+        btnClientes.addActionListener(e -> abrirClientes());
         btnProductos.addActionListener(e -> abrirProductos());
         btnInforme.addActionListener(e -> abrirInformes());
         btnConfig.addActionListener(e -> abrirConfiguracion());
         actions.add(btnCaja);
         actions.add(btnStock);
+        actions.add(btnClientes);
         actions.add(btnProductos);
         actions.add(btnInforme);
         actions.add(btnConfig);
@@ -131,13 +146,14 @@ public class PrincipalPanel extends JPanel {
         } else {
             lblLogo.setIcon(null);
             lblLogo.setText("●");
-            lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 28));
+            lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 26));
             lblLogo.setForeground(UiTheme.ACCENT);
+            lblLogo.setHorizontalAlignment(JLabel.CENTER);
         }
 
         Window w = SwingUtilities.getWindowAncestor(this);
         if (w instanceof JFrame) {
-            ((JFrame) w).setTitle(cfg.getNombreComercio() + " · Sistema de caja");
+            ((JFrame) w).setTitle(cfg.getNombreComercio() + " · Punto de Venta");
         }
     }
 
@@ -170,7 +186,7 @@ public class PrincipalPanel extends JPanel {
         JPanel card = card("Agregar al pedido");
         card.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6, 4, 6, 4);
+        c.insets = new Insets(7, 4, 7, 4);
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1;
 
@@ -190,6 +206,7 @@ public class PrincipalPanel extends JPanel {
         card.add(comboNota, c);
         c.gridx = 1; c.weightx = 0.45;
         spinCantidad.setFont(UiTheme.BODY);
+        spinCantidad.setPreferredSize(new Dimension(10, 36));
         card.add(spinCantidad, c);
 
         c.gridx = 0; c.gridy = 4; c.gridwidth = 2; c.weightx = 1;
@@ -210,25 +227,47 @@ public class PrincipalPanel extends JPanel {
         JPanel card = card("Cliente / delivery");
         card.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6, 4, 6, 4);
+        c.insets = new Insets(7, 4, 7, 4);
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1;
         c.gridx = 0;
 
         c.gridy = 0;
-        card.add(fieldLabel("Dirección (vacío = retiro)"), c);
+        card.add(fieldLabel("Cliente (opcional)"), c);
         c.gridy = 1;
+        styleCombo(comboCliente);
+        card.add(comboCliente, c);
+
+        c.gridy = 2;
+        lblClienteInfo.setFont(UiTheme.SMALL);
+        lblClienteInfo.setForeground(UiTheme.MUTED);
+        card.add(lblClienteInfo, c);
+
+        JPanel clienteActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        clienteActions.setOpaque(false);
+        JButton btnBuscar = secondaryButton("Buscar por cel/doc");
+        JButton btnGestion = secondaryButton("Gestionar clientes");
+        btnBuscar.addActionListener(e -> buscarClienteRapido());
+        btnGestion.addActionListener(e -> abrirClientes());
+        clienteActions.add(btnBuscar);
+        clienteActions.add(btnGestion);
+        c.gridy = 3;
+        card.add(clienteActions, c);
+
+        c.gridy = 4;
+        card.add(fieldLabel("Dirección (vacío = retiro)"), c);
+        c.gridy = 5;
         styleField(txtDireccion);
         card.add(txtDireccion, c);
 
-        c.gridy = 2;
+        c.gridy = 6;
         card.add(fieldLabel("Nota para cocina / cliente"), c);
-        c.gridy = 3;
+        c.gridy = 7;
         styleField(txtNotaCliente);
         card.add(txtNotaCliente, c);
 
-        c.gridy = 4;
-        JLabel tip = new JLabel("<html>Tip: armá el pedido, procesá para cocina<br>y usá ticket repartidor si es delivery.</html>");
+        c.gridy = 8;
+        JLabel tip = new JLabel("<html>Tip: asociá un cliente solo si hace falta.<br>Celular y documento se guardan con la venta.</html>");
         tip.setFont(UiTheme.SMALL);
         tip.setForeground(UiTheme.MUTED);
         card.add(tip, c);
@@ -238,29 +277,38 @@ public class PrincipalPanel extends JPanel {
 
     private JPanel buildOrderColumn() {
         JPanel card = card("Pedido actual");
-        card.setLayout(new BorderLayout(0, 10));
+        card.setLayout(new BorderLayout(0, 12));
 
         listaUI.setFont(UiTheme.MONO);
-        listaUI.setBackground(UiTheme.SURFACE);
+        listaUI.setBackground(UiTheme.SURFACE_ALT);
         listaUI.setForeground(UiTheme.INK);
-        listaUI.setSelectionBackground(new Color(0xF2D6CF));
-        listaUI.setSelectionForeground(UiTheme.INK);
-        listaUI.setFixedCellHeight(28);
+        listaUI.setSelectionBackground(UiTheme.ACCENT_SOFT);
+        listaUI.setSelectionForeground(UiTheme.ACCENT);
+        listaUI.setFixedCellHeight(32);
+        listaUI.setBorder(new EmptyBorder(6, 8, 6, 8));
         JScrollPane scroll = new JScrollPane(listaUI);
         scroll.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
+        scroll.getViewport().setBackground(UiTheme.SURFACE_ALT);
         card.add(scroll, BorderLayout.CENTER);
 
-        JPanel south = new JPanel(new BorderLayout(0, 10));
+        JPanel south = new JPanel(new BorderLayout(0, 12));
         south.setOpaque(false);
 
         JPanel totalRow = new JPanel(new BorderLayout());
-        totalRow.setOpaque(false);
-        JLabel totalCaption = new JLabel("TOTAL");
-        totalCaption.setFont(UiTheme.HEADING);
+        totalRow.setBackground(UiTheme.SURFACE_ALT);
+        totalRow.setBorder(BorderFactory.createCompoundBorder(
+                new javax.swing.border.MatteBorder(0, 4, 0, 0, UiTheme.ACCENT),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
+        JLabel totalCaption = new JLabel("TOTAL A COBRAR");
+        totalCaption.setFont(UiTheme.SMALL);
         totalCaption.setForeground(UiTheme.MUTED);
         lblTotal.setFont(UiTheme.TOTAL);
         lblTotal.setForeground(UiTheme.ACCENT);
-        totalRow.add(totalCaption, BorderLayout.WEST);
+        JPanel totalLeft = new JPanel(new BorderLayout());
+        totalLeft.setOpaque(false);
+        totalLeft.add(totalCaption, BorderLayout.NORTH);
+        totalRow.add(totalLeft, BorderLayout.WEST);
         totalRow.add(lblTotal, BorderLayout.EAST);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -268,7 +316,7 @@ public class PrincipalPanel extends JPanel {
         JButton btnQuitar = secondaryButton("Quitar ítem");
         JButton btnVaciar = secondaryButton("Vaciar");
         JButton btnDelivery = secondaryButton("Ticket repartidor");
-        JButton btnProcesar = primaryButton("Procesar e imprimir");
+        JButton btnProcesar = primaryButton("Cobrar e imprimir");
         btnQuitar.addActionListener(e -> quitarSeleccionado());
         btnVaciar.addActionListener(e -> vaciarPedido());
         btnDelivery.addActionListener(e -> imprimirRepartidor());
@@ -355,7 +403,8 @@ public class PrincipalPanel extends JPanel {
         double total = getTotalPedido();
         String direccion = txtDireccion.getText().trim();
         String nota = txtNotaCliente.getText().trim();
-        String ticket = TicketPrinter.buildSaleTicket(listaPedidos, direccion, nota);
+        ClienteVenta cliente = getClienteSeleccionado();
+        String ticket = TicketPrinter.buildSaleTicket(listaPedidos, direccion, nota, cliente);
 
         // Guardar venta SIEMPRE, aunque falle la impresora.
         boolean guardado = registrarVenta(total);
@@ -376,6 +425,10 @@ public class PrincipalPanel extends JPanel {
             actualizarTotal();
             txtDireccion.setText("");
             txtNotaCliente.setText("");
+            if (comboCliente.getItemCount() > 0) {
+                comboCliente.setSelectedIndex(0);
+            }
+            onClienteSeleccionado();
         }
     }
 
@@ -435,14 +488,16 @@ public class PrincipalPanel extends JPanel {
         }
     }
 
-    /** Guarda ítems con tipo/costo para informes de ganancia y gráficos. */
+    /** Guarda ítems con tipo/costo y cliente opcional. */
     private void registrarDetalleVenta(Date fecha) {
         String ahora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(fecha);
+        ClienteVenta cliente = getClienteSeleccionado();
         String sqlMeta = "SELECT COALESCE(tipo, 'Otro') AS tipo, COALESCE(costo, 0) AS costo "
                 + "FROM menuPrecios WHERE nombre = ? LIMIT 1";
         String sqlIns = "INSERT INTO venta_detalle "
-                + "(fecha, producto, tipo, cantidad, precio_unit, costo_unit, subtotal, costo_total) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                + "(fecha, producto, tipo, cantidad, precio_unit, costo_unit, subtotal, costo_total, "
+                + "cliente_id, cliente_celular, cliente_documento) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = new conection().getConnection()) {
             for (Pedido p : listaPedidos) {
@@ -472,12 +527,182 @@ public class PrincipalPanel extends JPanel {
                     ins.setDouble(6, costoUnit);
                     ins.setDouble(7, subtotal);
                     ins.setDouble(8, costoTotal);
+                    if (cliente != null) {
+                        ins.setInt(9, cliente.id);
+                        ins.setString(10, cliente.celular);
+                        ins.setString(11, cliente.documento);
+                    } else {
+                        ins.setObject(9, null);
+                        ins.setString(10, null);
+                        ins.setString(11, null);
+                    }
                     ins.executeUpdate();
                 }
             }
         } catch (SQLException e) {
             System.out.println("Error al guardar detalle de venta: " + e.getMessage());
             throw new RuntimeException(e);
+        }
+    }
+
+    private void cargarClientes() {
+        Integer selectedId = null;
+        KeyValue current = (KeyValue) comboCliente.getSelectedItem();
+        if (current != null && current.getKey() != null && current.getKey() > 0) {
+            selectedId = current.getKey();
+        }
+
+        comboCliente.removeAllItems();
+        comboCliente.addItem(new KeyValue(0, "Sin cliente"));
+        String sql = "SELECT id, nombre, celular, documento FROM clientes "
+                + "ORDER BY nombre COLLATE NOCASE, id DESC";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String nombre = rs.getString("nombre");
+                String celular = rs.getString("celular");
+                String documento = rs.getString("documento");
+                String label;
+                if (nombre != null && !nombre.isBlank()) {
+                    label = nombre + " · " + celular + " · CI " + documento;
+                } else {
+                    label = celular + " · CI " + documento;
+                }
+                comboCliente.addItem(new KeyValue(id, label));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al cargar clientes: " + e.getMessage());
+        }
+
+        if (selectedId != null) {
+            for (int i = 0; i < comboCliente.getItemCount(); i++) {
+                KeyValue kv = comboCliente.getItemAt(i);
+                if (selectedId.equals(kv.getKey())) {
+                    comboCliente.setSelectedIndex(i);
+                    break;
+                }
+            }
+        } else if (comboCliente.getItemCount() > 0) {
+            comboCliente.setSelectedIndex(0);
+        }
+        onClienteSeleccionado();
+    }
+
+    private void onClienteSeleccionado() {
+        ClienteVenta c = getClienteSeleccionado();
+        if (c == null) {
+            lblClienteInfo.setText("Sin cliente asociado a esta venta");
+            return;
+        }
+        lblClienteInfo.setText("Cel: " + c.celular + "  ·  Doc: " + c.documento
+                + (c.nombre.isBlank() ? "" : "  ·  " + c.nombre));
+        if (txtDireccion.getText().isBlank() && c.direccion != null && !c.direccion.isBlank()) {
+            txtDireccion.setText(c.direccion);
+        }
+    }
+
+    private ClienteVenta getClienteSeleccionado() {
+        KeyValue kv = (KeyValue) comboCliente.getSelectedItem();
+        if (kv == null || kv.getKey() == null || kv.getKey() <= 0) {
+            return null;
+        }
+        String sql = "SELECT id, nombre, celular, documento, direccion FROM clientes WHERE id = ?";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, kv.getKey());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                return new ClienteVenta(
+                        rs.getInt("id"),
+                        nullToEmpty(rs.getString("nombre")),
+                        nullToEmpty(rs.getString("celular")),
+                        nullToEmpty(rs.getString("documento")),
+                        nullToEmpty(rs.getString("direccion"))
+                );
+            }
+        } catch (SQLException e) {
+            return null;
+        }
+    }
+
+    private void buscarClienteRapido() {
+        String q = JOptionPane.showInputDialog(this,
+                "Buscar por celular o documento:", "Buscar cliente", JOptionPane.QUESTION_MESSAGE);
+        if (q == null) {
+            return;
+        }
+        q = q.trim();
+        if (q.isEmpty()) {
+            return;
+        }
+        String sql = "SELECT id FROM clientes WHERE celular LIKE ? OR documento LIKE ? "
+                + "ORDER BY id DESC LIMIT 1";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            String like = "%" + q + "%";
+            ps.setString(1, like);
+            ps.setString(2, like);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    int crear = JOptionPane.showConfirmDialog(this,
+                            "No se encontró. ¿Abrir gestión de clientes para darlo de alta?",
+                            "Sin resultados", JOptionPane.YES_NO_OPTION);
+                    if (crear == JOptionPane.YES_OPTION) {
+                        abrirClientes();
+                    }
+                    return;
+                }
+                int id = rs.getInt("id");
+                for (int i = 0; i < comboCliente.getItemCount(); i++) {
+                    if (id == comboCliente.getItemAt(i).getKey()) {
+                        comboCliente.setSelectedIndex(i);
+                        onClienteSeleccionado();
+                        return;
+                    }
+                }
+                cargarClientes();
+                for (int i = 0; i < comboCliente.getItemCount(); i++) {
+                    if (id == comboCliente.getItemAt(i).getKey()) {
+                        comboCliente.setSelectedIndex(i);
+                        onClienteSeleccionado();
+                        return;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al buscar: " + e.getMessage());
+        }
+    }
+
+    private void abrirClientes() {
+        Window w = SwingUtilities.getWindowAncestor(this);
+        JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
+        ClientesDialog dialog = new ClientesDialog(frame, this::cargarClientes);
+        dialog.setVisible(true);
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
+    }
+
+    /** Datos mínimos del cliente asociado a la venta. */
+    static final class ClienteVenta {
+        final int id;
+        final String nombre;
+        final String celular;
+        final String documento;
+        final String direccion;
+
+        ClienteVenta(int id, String nombre, String celular, String documento, String direccion) {
+            this.id = id;
+            this.nombre = nombre;
+            this.celular = celular;
+            this.documento = documento;
+            this.direccion = direccion;
         }
     }
 
@@ -642,20 +867,23 @@ public class PrincipalPanel extends JPanel {
         JPanel p = new JPanel();
         p.setBackground(UiTheme.SURFACE);
         p.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UiTheme.BORDER),
-                BorderFactory.createTitledBorder(
-                        BorderFactory.createEmptyBorder(8, 8, 8, 8),
-                        title,
-                        0, 0,
-                        UiTheme.HEADING,
-                        UiTheme.INK
+                new javax.swing.border.MatteBorder(0, 3, 0, 0, UiTheme.ACCENT),
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(UiTheme.BORDER, 1),
+                        BorderFactory.createTitledBorder(
+                                BorderFactory.createEmptyBorder(12, 14, 14, 14),
+                                title,
+                                0, 0,
+                                UiTheme.HEADING,
+                                UiTheme.INK
+                        )
                 )
         ));
         return p;
     }
 
     private static JLabel fieldLabel(String text) {
-        JLabel l = new JLabel(text);
+        JLabel l = new JLabel(text.toUpperCase());
         l.setFont(UiTheme.SMALL);
         l.setForeground(UiTheme.MUTED);
         return l;
@@ -663,16 +891,18 @@ public class PrincipalPanel extends JPanel {
 
     private static void styleField(JTextField f) {
         f.setFont(UiTheme.BODY);
-        f.setBackground(Color.WHITE);
+        f.setBackground(UiTheme.SURFACE_ALT);
         f.setForeground(UiTheme.INK);
+        f.setCaretColor(UiTheme.ACCENT);
         f.setBorder(UiTheme.fieldBorder());
-        f.setPreferredSize(new Dimension(10, 34));
+        f.setPreferredSize(new Dimension(10, 38));
     }
 
     private static void styleCombo(JComboBox<?> combo) {
         combo.setFont(UiTheme.BODY);
-        combo.setBackground(Color.WHITE);
-        combo.setPreferredSize(new Dimension(10, 34));
+        combo.setBackground(UiTheme.SURFACE_ALT);
+        combo.setForeground(UiTheme.INK);
+        combo.setPreferredSize(new Dimension(10, 38));
     }
 
     private static JButton primaryButton(String text) {

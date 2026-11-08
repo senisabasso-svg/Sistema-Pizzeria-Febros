@@ -123,7 +123,19 @@ public class conection {
                 + "precio_unit REAL NOT NULL, "
                 + "costo_unit REAL NOT NULL DEFAULT 0, "
                 + "subtotal REAL NOT NULL, "
-                + "costo_total REAL NOT NULL DEFAULT 0"
+                + "costo_total REAL NOT NULL DEFAULT 0, "
+                + "cliente_id INTEGER, "
+                + "cliente_celular TEXT, "
+                + "cliente_documento TEXT"
+                + ");";
+
+        String clientes = "CREATE TABLE IF NOT EXISTS clientes ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "nombre TEXT DEFAULT '', "
+                + "celular TEXT NOT NULL, "
+                + "documento TEXT NOT NULL, "
+                + "direccion TEXT DEFAULT '', "
+                + "nota TEXT DEFAULT ''"
                 + ");";
 
         try (Statement stmt = conn.createStatement()) {
@@ -133,8 +145,12 @@ public class conection {
             stmt.execute(movimientos);
             stmt.execute(stock);
             stmt.execute(ventaDetalle);
+            stmt.execute(clientes);
             ensureColumn(stmt, "menuPrecios", "costo", "REAL DEFAULT 0");
             ensureColumn(stmt, "menuPrecios", "tipo", "TEXT DEFAULT 'Otro'");
+            ensureColumn(stmt, "venta_detalle", "cliente_id", "INTEGER");
+            ensureColumn(stmt, "venta_detalle", "cliente_celular", "TEXT");
+            ensureColumn(stmt, "venta_detalle", "cliente_documento", "TEXT");
         } catch (SQLException e) {
             System.out.println("Error al verificar tablas: " + e.getMessage());
         }

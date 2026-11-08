@@ -533,9 +533,9 @@ public class InformesDialog extends JDialog {
         table.setRowHeight(30);
         table.setBackground(UiTheme.SURFACE);
         table.setForeground(UiTheme.INK);
-        table.setGridColor(new Color(0xE8DCCE));
-        table.setSelectionBackground(new Color(0xF2D6CF));
-        table.setSelectionForeground(UiTheme.INK);
+        table.setGridColor(UiTheme.BORDER);
+        table.setSelectionBackground(UiTheme.ACCENT_SOFT);
+        table.setSelectionForeground(UiTheme.ACCENT);
         JTableHeader header = table.getTableHeader();
         header.setFont(UiTheme.BODY_BOLD);
         header.setBackground(UiTheme.SURFACE_ALT);
@@ -562,7 +562,9 @@ public class InformesDialog extends JDialog {
     private static void styleField(JTextField f) {
         f.setFont(UiTheme.BODY);
         f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(Color.WHITE);
+        f.setBackground(UiTheme.SURFACE_ALT);
+        f.setForeground(UiTheme.INK);
+        f.setCaretColor(UiTheme.ACCENT);
         f.setPreferredSize(new Dimension(90, 32));
     }
 

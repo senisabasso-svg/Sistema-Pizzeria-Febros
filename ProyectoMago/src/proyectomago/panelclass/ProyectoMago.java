@@ -1,9 +1,9 @@
 package proyectomago.panelclass;
 
+import java.awt.Dimension;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import java.awt.Dimension;
 
 public class ProyectoMago {
 
@@ -15,20 +15,27 @@ public class ProyectoMago {
         }
 
         SwingUtilities.invokeLater(() -> {
-            // Gate de licencia: caché 2 días o consulta API.
             if (!LicenseGate.ensureCanRun(null)) {
                 System.exit(0);
                 return;
             }
 
             String nombre = ComercioConfig.get().getNombreComercio();
-            JFrame frame = new JFrame(nombre + " · Sistema de caja");
+            JFrame frame = new JFrame(nombre + " · Punto de Venta");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setMinimumSize(new Dimension(980, 640));
-            frame.setContentPane(new PrincipalPanel());
-            frame.pack();
-            frame.setSize(1040, 700);
+            frame.setMinimumSize(new Dimension(1040, 680));
+            frame.getContentPane().setBackground(UiTheme.BG);
+            frame.setSize(1120, 740);
             frame.setLocationRelativeTo(null);
+
+            Runnable openMain = () -> {
+                frame.setContentPane(new PrincipalPanel());
+                frame.setTitle(ComercioConfig.get().getNombreComercio() + " · Punto de Venta");
+                frame.revalidate();
+                frame.repaint();
+            };
+
+            frame.setContentPane(new LoginPanel(openMain));
             frame.setVisible(true);
         });
     }

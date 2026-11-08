@@ -39,6 +39,20 @@ public final class TicketPrinter {
     }
 
     public static String buildSaleTicket(List<Pedido> pedidos, String direccion, String notaCliente) {
+        return buildSaleTicket(pedidos, direccion, notaCliente, null, null, null);
+    }
+
+    public static String buildSaleTicket(List<Pedido> pedidos, String direccion, String notaCliente,
+                                        PrincipalPanel.ClienteVenta cliente) {
+        if (cliente == null) {
+            return buildSaleTicket(pedidos, direccion, notaCliente, null, null, null);
+        }
+        return buildSaleTicket(pedidos, direccion, notaCliente,
+                cliente.nombre, cliente.celular, cliente.documento);
+    }
+
+    public static String buildSaleTicket(List<Pedido> pedidos, String direccion, String notaCliente,
+                                        String clienteNombre, String celular, String documento) {
         String nombre = getLocalName();
         StringBuilder sb = new StringBuilder();
         sb.append("--------------------------------\n");
@@ -53,6 +67,15 @@ public final class TicketPrinter {
         sb.append("--------------------------------\n");
         sb.append("ITEMS: ").append(pedidos.size()).append("\n");
         sb.append("TOTAL: $").append(String.format("%.0f", total)).append("\n");
+        if (clienteNombre != null && !clienteNombre.isBlank()) {
+            sb.append("CLIENTE: ").append(clienteNombre.trim()).append("\n");
+        }
+        if (celular != null && !celular.isBlank()) {
+            sb.append("CEL: ").append(celular.trim()).append("\n");
+        }
+        if (documento != null && !documento.isBlank()) {
+            sb.append("DOC: ").append(documento.trim()).append("\n");
+        }
         if (direccion != null && !direccion.isBlank()) {
             sb.append("DIR: ").append(direccion.trim()).append("\n");
         }

@@ -308,7 +308,9 @@ public class ProductosDialog extends JDialog {
     private static void styleField(JTextField f) {
         f.setFont(UiTheme.BODY);
         f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(UiTheme.SURFACE);
+        f.setBackground(UiTheme.SURFACE_ALT);
+        f.setForeground(UiTheme.INK);
+        f.setCaretColor(UiTheme.ACCENT);
         f.setPreferredSize(new Dimension(10, 34));
     }
 

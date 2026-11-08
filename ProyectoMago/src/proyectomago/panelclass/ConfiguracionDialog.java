@@ -90,7 +90,7 @@ public class ConfiguracionDialog extends JDialog {
         lblPreview.setHorizontalAlignment(JLabel.CENTER);
         lblPreview.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
         lblPreview.setOpaque(true);
-        lblPreview.setBackground(Color.WHITE);
+        lblPreview.setBackground(UiTheme.SURFACE_ALT);
 
         JPanel logoActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         logoActions.setOpaque(false);
@@ -352,20 +352,20 @@ public class ConfiguracionDialog extends JDialog {
     private static void styleField(JTextField f) {
         f.setFont(UiTheme.BODY);
         f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(Color.WHITE);
+        f.setBackground(UiTheme.SURFACE_ALT); f.setForeground(UiTheme.INK);
         f.setPreferredSize(new Dimension(10, 34));
     }
 
     private static void stylePassword(JPasswordField f) {
         f.setFont(UiTheme.BODY);
         f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(Color.WHITE);
+        f.setBackground(UiTheme.SURFACE_ALT); f.setForeground(UiTheme.INK);
         f.setPreferredSize(new Dimension(10, 34));
     }
 
     private static void styleCombo(JComboBox<?> combo) {
         combo.setFont(UiTheme.BODY);
-        combo.setBackground(Color.WHITE);
+        combo.setBackground(UiTheme.SURFACE_ALT); combo.setForeground(UiTheme.INK);
         combo.setPreferredSize(new Dimension(10, 34));
     }
 
