@@ -30,7 +30,9 @@ import javax.swing.table.DefaultTableModel;
  */
 public class ProductosDialog extends JDialog {
 
-    private static final String[] TIPOS = {"Pizza", "Empanada", "Bebida", "Extra", "Otro"};
+    private static final String[] TIPOS = {
+        "Pan", "Facturas", "Tortas", "Masas", "Sandwiches", "Bebidas", "Fiambres", "Otro"
+    };
 
     private final DefaultTableModel model;
     private final JTable table;
@@ -236,7 +238,7 @@ public class ProductosDialog extends JDialog {
         txtNombre.setText("");
         txtPrecio.setText("");
         txtCosto.setText("0");
-        comboTipo.setSelectedItem("Pizza");
+        comboTipo.setSelectedItem("Pan");
         actualizarLblGanancia();
         cargarTabla();
         if (onChanged != null) {

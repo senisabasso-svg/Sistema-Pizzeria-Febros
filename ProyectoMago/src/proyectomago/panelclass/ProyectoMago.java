@@ -22,12 +22,12 @@ public class ProyectoMago {
             }
 
             String nombre = ComercioConfig.get().getNombreComercio();
-            JFrame frame = new JFrame(nombre + " · Sistema de caja");
+            JFrame frame = new JFrame(nombre + " · Sistema panadería");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setMinimumSize(new Dimension(980, 640));
+            frame.setMinimumSize(new Dimension(1080, 680));
             frame.setContentPane(new PrincipalPanel());
             frame.pack();
-            frame.setSize(1040, 700);
+            frame.setSize(1180, 740);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });

@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -25,9 +26,13 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
 /**
- * Stock básico / medio en bruto: ítems, cantidades y ajuste manual.
+ * Stock de panadería: ingredientes, productos terminados y packaging.
  */
 public class StockDialog extends JDialog {
+
+    private static final String[] CATEGORIAS = {
+        "Ingrediente", "Producto terminado", "Packaging", "Otro"
+    };
 
     private final DefaultTableModel model;
     private final JTable table;
@@ -36,17 +41,18 @@ public class StockDialog extends JDialog {
     private final JTextField txtUnidad = new JTextField(6);
     private final JTextField txtCosto = new JTextField(8);
     private final JTextField txtMinimo = new JTextField(8);
+    private final JComboBox<String> comboCategoria = new JComboBox<>(CATEGORIAS);
 
     public StockDialog(JFrame owner) {
-        super(owner, "Stock", true);
-        setSize(700, 480);
+        super(owner, "Stock panadería", true);
+        setSize(760, 520);
         setLocationRelativeTo(owner);
         getContentPane().setBackground(UiTheme.BG);
         setLayout(new BorderLayout(10, 10));
         ((JPanel) getContentPane()).setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
 
         model = new DefaultTableModel(
-                new Object[]{"ID", "Ítem", "Cant.", "Unidad", "Costo u.", "Mínimo", "Alerta"}, 0) {
+                new Object[]{"ID", "Ítem", "Categoría", "Cant.", "Unidad", "Costo u.", "Mínimo", "Alerta"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -68,14 +74,30 @@ public class StockDialog extends JDialog {
             if (!e.getValueIsAdjusting() && table.getSelectedRow() >= 0) {
                 int row = table.getSelectedRow();
                 txtNombre.setText(String.valueOf(model.getValueAt(row, 1)));
-                txtCantidad.setText(String.valueOf(model.getValueAt(row, 2)));
-                txtUnidad.setText(String.valueOf(model.getValueAt(row, 3)));
-                txtCosto.setText(String.valueOf(model.getValueAt(row, 4)).replace("$", ""));
-                txtMinimo.setText(String.valueOf(model.getValueAt(row, 5)));
+                selectCategoria(String.valueOf(model.getValueAt(row, 2)));
+                txtCantidad.setText(String.valueOf(model.getValueAt(row, 3)));
+                txtUnidad.setText(String.valueOf(model.getValueAt(row, 4)));
+                txtCosto.setText(String.valueOf(model.getValueAt(row, 5)).replace("$", ""));
+                txtMinimo.setText(String.valueOf(model.getValueAt(row, 6)));
             }
         });
 
         cargarTabla();
+    }
+
+    private void selectCategoria(String cat) {
+        if (cat == null || cat.isBlank()) {
+            comboCategoria.setSelectedItem("Ingrediente");
+            return;
+        }
+        for (int i = 0; i < comboCategoria.getItemCount(); i++) {
+            if (cat.equalsIgnoreCase(comboCategoria.getItemAt(i))) {
+                comboCategoria.setSelectedIndex(i);
+                return;
+            }
+        }
+        comboCategoria.addItem(cat);
+        comboCategoria.setSelectedItem(cat);
     }
 
     private JPanel buildForm() {
@@ -93,27 +115,34 @@ public class StockDialog extends JDialog {
         form.add(txtNombre, c);
 
         c.gridx = 2;
-        form.add(label("Cantidad"), c);
+        form.add(label("Categoría"), c);
         c.gridx = 3;
+        comboCategoria.setFont(UiTheme.BODY);
+        comboCategoria.setPreferredSize(new Dimension(160, 34));
+        form.add(comboCategoria, c);
+
+        c.gridx = 0; c.gridy = 1;
+        form.add(label("Cantidad"), c);
+        c.gridx = 1;
         styleField(txtCantidad);
         form.add(txtCantidad, c);
 
-        c.gridx = 0; c.gridy = 1;
+        c.gridx = 2;
         form.add(label("Unidad"), c);
-        c.gridx = 1;
+        c.gridx = 3;
         styleField(txtUnidad);
-        txtUnidad.setText("u");
+        txtUnidad.setText("kg");
         form.add(txtUnidad, c);
 
-        c.gridx = 2;
+        c.gridx = 0; c.gridy = 2;
         form.add(label("Costo unit."), c);
-        c.gridx = 3;
+        c.gridx = 1;
         styleField(txtCosto);
         form.add(txtCosto, c);
 
-        c.gridx = 0; c.gridy = 2;
+        c.gridx = 2;
         form.add(label("Mínimo"), c);
-        c.gridx = 1;
+        c.gridx = 3;
         styleField(txtMinimo);
         txtMinimo.setText("0");
         form.add(txtMinimo, c);
@@ -143,8 +172,8 @@ public class StockDialog extends JDialog {
 
     private void cargarTabla() {
         model.setRowCount(0);
-        String sql = "SELECT id, nombre, cantidad, unidad, costo_unitario, minimo FROM stock "
-                + "ORDER BY nombre COLLATE NOCASE";
+        String sql = "SELECT id, nombre, COALESCE(categoria,'Ingrediente') AS categoria, cantidad, unidad, "
+                + "costo_unitario, minimo FROM stock ORDER BY categoria, nombre COLLATE NOCASE";
         try (Connection connection = new conection().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -155,6 +184,7 @@ public class StockDialog extends JDialog {
                 model.addRow(new Object[]{
                     rs.getInt("id"),
                     rs.getString("nombre"),
+                    rs.getString("categoria"),
                     formatNum(cant),
                     rs.getString("unidad"),
                     "$" + formatNum(rs.getDouble("costo_unitario")),
@@ -174,6 +204,7 @@ public class StockDialog extends JDialog {
         String unidad = txtUnidad.getText().trim();
         Double costo = parseNum(txtCosto.getText().trim());
         Double minimo = parseNum(txtMinimo.getText().trim());
+        String categoria = String.valueOf(comboCategoria.getSelectedItem());
 
         if (nombre.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Ingresá el nombre del ítem.");
@@ -187,7 +218,8 @@ public class StockDialog extends JDialog {
             unidad = "u";
         }
 
-        String sql = "INSERT INTO stock (nombre, cantidad, unidad, costo_unitario, minimo) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO stock (nombre, cantidad, unidad, costo_unitario, minimo, categoria) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection connection = new conection().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, nombre);
@@ -195,6 +227,7 @@ public class StockDialog extends JDialog {
             ps.setString(3, unidad);
             ps.setDouble(4, costo);
             ps.setDouble(5, minimo);
+            ps.setString(6, categoria);
             ps.executeUpdate();
             limpiarForm();
             cargarTabla();
@@ -217,6 +250,7 @@ public class StockDialog extends JDialog {
         String unidad = txtUnidad.getText().trim();
         Double costo = parseNum(txtCosto.getText().trim());
         Double minimo = parseNum(txtMinimo.getText().trim());
+        String categoria = String.valueOf(comboCategoria.getSelectedItem());
 
         if (nombre.isEmpty() || cantidad == null || costo == null || minimo == null) {
             JOptionPane.showMessageDialog(this, "Completá nombre, cantidad, costo y mínimo.");
@@ -226,7 +260,8 @@ public class StockDialog extends JDialog {
             unidad = "u";
         }
 
-        String sql = "UPDATE stock SET nombre = ?, cantidad = ?, unidad = ?, costo_unitario = ?, minimo = ? WHERE id = ?";
+        String sql = "UPDATE stock SET nombre = ?, cantidad = ?, unidad = ?, costo_unitario = ?, "
+                + "minimo = ?, categoria = ? WHERE id = ?";
         try (Connection connection = new conection().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, nombre);
@@ -234,7 +269,8 @@ public class StockDialog extends JDialog {
             ps.setString(3, unidad);
             ps.setDouble(4, costo);
             ps.setDouble(5, minimo);
-            ps.setInt(6, id);
+            ps.setString(6, categoria);
+            ps.setInt(7, id);
             ps.executeUpdate();
             cargarTabla();
             JOptionPane.showMessageDialog(this, "Stock actualizado.");
@@ -281,9 +317,10 @@ public class StockDialog extends JDialog {
     private void limpiarForm() {
         txtNombre.setText("");
         txtCantidad.setText("");
-        txtUnidad.setText("u");
+        txtUnidad.setText("kg");
         txtCosto.setText("");
         txtMinimo.setText("0");
+        comboCategoria.setSelectedItem("Ingrediente");
     }
 
     private static Double parseNum(String texto) {

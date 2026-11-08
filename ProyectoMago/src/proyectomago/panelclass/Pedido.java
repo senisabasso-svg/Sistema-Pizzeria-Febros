@@ -65,7 +65,7 @@ public class Pedido {
 
     public String toTicketLine() {
         String line = cantidad + " x " + nombreProd + "  $" + String.format("%.0f", getSubtotal());
-        if (nota != null && !nota.isBlank() && !"Sin Aderezos".equalsIgnoreCase(nota)) {
+        if (nota != null && !nota.isBlank() && !"Sin nota".equalsIgnoreCase(nota)) {
             line += "\n   (" + nota + ")";
         }
         return line;
@@ -74,7 +74,7 @@ public class Pedido {
     @Override
     public String toString() {
         String base = cantidad + "× " + nombreProd + "  $" + String.format("%.0f", getSubtotal());
-        if (nota != null && !nota.isBlank() && !"Sin Aderezos".equalsIgnoreCase(nota)) {
+        if (nota != null && !nota.isBlank() && !"Sin nota".equalsIgnoreCase(nota)) {
             base += " · " + nota;
         }
         return base;

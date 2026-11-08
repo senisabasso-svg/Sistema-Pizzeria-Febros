@@ -64,7 +64,7 @@ public class InformesDialog extends JDialog {
     private static final DateTimeFormatter SQL_DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter SHOW_DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String[] TIPOS_BASE = {
-        "Todos", "Pizza", "Empanada", "Bebida", "Extra", "Otro"
+        "Todos", "Pan", "Facturas", "Tortas", "Masas", "Sandwiches", "Bebidas", "Fiambres", "Otro"
     };
 
     private double lastVentas;
@@ -72,7 +72,7 @@ public class InformesDialog extends JDialog {
     private double lastGanancia;
 
     public InformesDialog(JFrame owner) {
-        super(owner, "Informes · ventas y ganancia", true);
+        super(owner, "Informes panadería · ventas y ganancia", true);
         setSize(980, 720);
         setMinimumSize(new Dimension(860, 620));
         setLocationRelativeTo(owner);

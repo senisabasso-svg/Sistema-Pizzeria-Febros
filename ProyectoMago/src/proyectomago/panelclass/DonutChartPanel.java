@@ -32,14 +32,14 @@ public class DonutChartPanel extends JPanel {
     }
 
     private static final Color[] PALETTE = {
-        new Color(0xC23B22),
-        new Color(0x2F6B4F),
-        new Color(0xC9922A),
-        new Color(0x8B5E3C),
-        new Color(0x3F6F8C),
-        new Color(0xA84B2F),
-        new Color(0x5C6B73),
-        new Color(0x6B8F71)
+        new Color(0x9A6B2F),
+        new Color(0x3D6B4F),
+        new Color(0xC4A35A),
+        new Color(0x6E4E1F),
+        new Color(0x5B7C8A),
+        new Color(0xA67C52),
+        new Color(0x7A6A58),
+        new Color(0x8F9E6E)
     };
 
     private final List<Slice> slices = new ArrayList<>();

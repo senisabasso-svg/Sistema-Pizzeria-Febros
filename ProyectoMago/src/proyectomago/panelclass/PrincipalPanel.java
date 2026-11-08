@@ -38,7 +38,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
 /**
- * Pantalla principal POS para pizzería chica: armar pedido, cobrar/imprimir, delivery e informe del día.
+ * Pantalla principal POS para panadería: venta rápida, caja, stock, proveedores y merma.
  */
 public class PrincipalPanel extends JPanel {
 
@@ -47,7 +47,7 @@ public class PrincipalPanel extends JPanel {
 
     private final JComboBox<String> comboProducto = new JComboBox<>();
     private final JComboBox<String> comboNota = new JComboBox<>(new String[]{
-        "Sin Aderezos", "Mayonesa", "Ketchup", "Mostaza", "Salsa golf", "Picante", "Extra queso"
+        "Sin nota", "Caliente", "Para llevar", "Integral", "Sin azúcar", "Sin TACC", "Encargo"
     });
     private final JSpinner spinCantidad = new JSpinner(new SpinnerNumberModel(1, 1, 50, 1));
     private final JTextField txtPrecioUnitario = new JTextField();
@@ -88,7 +88,7 @@ public class PrincipalPanel extends JPanel {
 
         JPanel titles = new JPanel(new BorderLayout());
         titles.setOpaque(false);
-        JLabel subtitle = new JLabel("Caja · pedidos · stock · delivery");
+        JLabel subtitle = new JLabel("Panadería · caja · stock · proveedores");
         subtitle.setFont(UiTheme.SMALL);
         subtitle.setForeground(UiTheme.MUTED);
         titles.add(lblTituloComercio, BorderLayout.NORTH);
@@ -97,20 +97,29 @@ public class PrincipalPanel extends JPanel {
         brand.add(lblLogo);
         brand.add(titles);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         actions.setOpaque(false);
         JButton btnCaja = secondaryButton("Caja");
         JButton btnStock = secondaryButton("Stock");
+        JButton btnProveedores = secondaryButton("Proveedores");
+        JButton btnCompras = secondaryButton("Compras");
+        JButton btnMerma = secondaryButton("Merma");
         JButton btnProductos = secondaryButton("Productos");
         JButton btnInforme = secondaryButton("Informes");
-        JButton btnConfig = secondaryButton("Configuración comercio");
+        JButton btnConfig = secondaryButton("Configuración");
         btnCaja.addActionListener(e -> abrirCaja());
         btnStock.addActionListener(e -> abrirStock());
+        btnProveedores.addActionListener(e -> abrirProveedores());
+        btnCompras.addActionListener(e -> abrirCompras());
+        btnMerma.addActionListener(e -> abrirMerma());
         btnProductos.addActionListener(e -> abrirProductos());
         btnInforme.addActionListener(e -> abrirInformes());
         btnConfig.addActionListener(e -> abrirConfiguracion());
         actions.add(btnCaja);
         actions.add(btnStock);
+        actions.add(btnProveedores);
+        actions.add(btnCompras);
+        actions.add(btnMerma);
         actions.add(btnProductos);
         actions.add(btnInforme);
         actions.add(btnConfig);
@@ -137,7 +146,7 @@ public class PrincipalPanel extends JPanel {
 
         Window w = SwingUtilities.getWindowAncestor(this);
         if (w instanceof JFrame) {
-            ((JFrame) w).setTitle(cfg.getNombreComercio() + " · Sistema de caja");
+            ((JFrame) w).setTitle(cfg.getNombreComercio() + " · Sistema panadería");
         }
     }
 
@@ -181,7 +190,7 @@ public class PrincipalPanel extends JPanel {
         card.add(comboProducto, c);
 
         c.gridy = 2; c.gridwidth = 1; c.weightx = 0.55;
-        card.add(fieldLabel("Nota / aderezo"), c);
+        card.add(fieldLabel("Nota / detalle"), c);
         c.gridx = 1; c.weightx = 0.45;
         card.add(fieldLabel("Cant."), c);
 
@@ -207,7 +216,7 @@ public class PrincipalPanel extends JPanel {
     }
 
     private JPanel buildClientCard() {
-        JPanel card = card("Cliente / delivery");
+        JPanel card = card("Cliente / encargo");
         card.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(6, 4, 6, 4);
@@ -216,19 +225,19 @@ public class PrincipalPanel extends JPanel {
         c.gridx = 0;
 
         c.gridy = 0;
-        card.add(fieldLabel("Dirección (vacío = retiro)"), c);
+        card.add(fieldLabel("Cliente / dirección (opcional)"), c);
         c.gridy = 1;
         styleField(txtDireccion);
         card.add(txtDireccion, c);
 
         c.gridy = 2;
-        card.add(fieldLabel("Nota para cocina / cliente"), c);
+        card.add(fieldLabel("Nota del pedido / encargo"), c);
         c.gridy = 3;
         styleField(txtNotaCliente);
         card.add(txtNotaCliente, c);
 
         c.gridy = 4;
-        JLabel tip = new JLabel("<html>Tip: armá el pedido, procesá para cocina<br>y usá ticket repartidor si es delivery.</html>");
+        JLabel tip = new JLabel("<html>Tip: cobrá en caja, controlá stock y registrá<br>merma del día para no perder dinero.</html>");
         tip.setFont(UiTheme.SMALL);
         tip.setForeground(UiTheme.MUTED);
         card.add(tip, c);
@@ -267,15 +276,15 @@ public class PrincipalPanel extends JPanel {
         buttons.setOpaque(false);
         JButton btnQuitar = secondaryButton("Quitar ítem");
         JButton btnVaciar = secondaryButton("Vaciar");
-        JButton btnDelivery = secondaryButton("Ticket repartidor");
-        JButton btnProcesar = primaryButton("Procesar e imprimir");
+        JButton btnEncargo = secondaryButton("Ticket encargo");
+        JButton btnProcesar = primaryButton("Cobrar e imprimir");
         btnQuitar.addActionListener(e -> quitarSeleccionado());
         btnVaciar.addActionListener(e -> vaciarPedido());
-        btnDelivery.addActionListener(e -> imprimirRepartidor());
+        btnEncargo.addActionListener(e -> imprimirRepartidor());
         btnProcesar.addActionListener(e -> procesarOrden());
         buttons.add(btnQuitar);
         buttons.add(btnVaciar);
-        buttons.add(btnDelivery);
+        buttons.add(btnEncargo);
         buttons.add(btnProcesar);
 
         south.add(totalRow, BorderLayout.NORTH);
@@ -388,8 +397,8 @@ public class PrincipalPanel extends JPanel {
         String direccion = txtDireccion.getText().trim();
         if (direccion.isEmpty()) {
             int opcion = JOptionPane.showConfirmDialog(this,
-                    "No hay dirección. ¿Imprimir igual (retiro / sin dirección)?",
-                    "Ticket repartidor", JOptionPane.YES_NO_OPTION);
+                    "No hay cliente/dirección. ¿Imprimir igual?",
+                    "Ticket encargo", JOptionPane.YES_NO_OPTION);
             if (opcion != JOptionPane.YES_OPTION) {
                 return;
             }
@@ -428,10 +437,26 @@ public class PrincipalPanel extends JPanel {
                 sumoInforme(conn, ahora, totalStr);
             }
             registrarDetalleVenta(ahora);
+            descontarStockVenta();
             return true;
         } catch (Exception e) {
             System.out.println("Error al registrar venta: " + e.getMessage());
             return false;
+        }
+    }
+
+    /** Si el producto coincide con un ítem de stock, descuenta unidades vendidas. */
+    private void descontarStockVenta() {
+        String sql = "UPDATE stock SET cantidad = MAX(cantidad - ?, 0) WHERE lower(nombre) = lower(?)";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            for (Pedido p : listaPedidos) {
+                ps.setInt(1, p.getCantidad());
+                ps.setString(2, p.getNombreProd());
+                ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println("No se pudo descontar stock: " + e.getMessage());
         }
     }
 
@@ -500,6 +525,24 @@ public class PrincipalPanel extends JPanel {
         JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
         StockDialog dialog = new StockDialog(frame);
         dialog.setVisible(true);
+    }
+
+    private void abrirProveedores() {
+        Window w = SwingUtilities.getWindowAncestor(this);
+        JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
+        new ProveedoresDialog(frame).setVisible(true);
+    }
+
+    private void abrirCompras() {
+        Window w = SwingUtilities.getWindowAncestor(this);
+        JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
+        new ComprasDialog(frame).setVisible(true);
+    }
+
+    private void abrirMerma() {
+        Window w = SwingUtilities.getWindowAncestor(this);
+        JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
+        new MermaDialog(frame).setVisible(true);
     }
 
     private void abrirProductos() {

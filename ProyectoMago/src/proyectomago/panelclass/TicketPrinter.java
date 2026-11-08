@@ -24,7 +24,7 @@ public final class TicketPrinter {
     }
 
     /** @deprecated usar getLocalName() */
-    public static final String LOCAL_NAME = "GARAJE GOURMET";
+    public static final String LOCAL_NAME = "Panadería";
 
     public static class PrintResult {
         public final boolean printed;
@@ -60,7 +60,7 @@ public final class TicketPrinter {
             sb.append("NOTA: ").append(notaCliente.trim()).append("\n");
         }
         sb.append("--------------------------------\n");
-        sb.append(center("Gracias por su compra")).append("\n");
+        sb.append(center("Gracias · pan fresco del día")).append("\n");
         sb.append("\n\n\n");
         return sb.toString();
     }
@@ -70,7 +70,7 @@ public final class TicketPrinter {
         StringBuilder sb = new StringBuilder();
         sb.append("--------------------------------\n");
         sb.append(center(nombre)).append("\n");
-        sb.append(center("TICKET REPARTIDOR")).append("\n");
+        sb.append(center("TICKET ENCARGO")).append("\n");
         sb.append("--------------------------------\n");
         if (direccion != null && !direccion.isBlank()) {
             sb.append("DIRECCION:\n").append(direccion.trim()).append("\n\n");

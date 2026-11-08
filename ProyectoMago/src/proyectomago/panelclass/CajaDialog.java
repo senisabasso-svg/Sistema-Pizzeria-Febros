@@ -45,7 +45,7 @@ public class CajaDialog extends JDialog {
     private String fechaApertura;
 
     public CajaDialog(JFrame owner) {
-        super(owner, "Caja del día", true);
+        super(owner, "Caja diaria · ingresos y egresos", true);
         setSize(720, 520);
         setLocationRelativeTo(owner);
         getContentPane().setBackground(UiTheme.BG);
@@ -348,7 +348,7 @@ public class CajaDialog extends JDialog {
             return;
         }
         if (concepto.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Ingresá un concepto (ej: pago delivery, cambio, gasto).");
+            JOptionPane.showMessageDialog(this, "Ingresá un concepto (ej: pago proveedor, vuelto, gasto).");
             return;
         }
 

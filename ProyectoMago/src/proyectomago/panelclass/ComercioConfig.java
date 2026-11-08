@@ -30,7 +30,7 @@ public final class ComercioConfig {
     private static final String KEY_LAST_OK_AT = "lastStatusOkAt";
     private static final String KEY_LAST_STATUS = "lastStatus";
 
-    private static final String DEFAULT_NOMBRE = "GARAJE GOURMET";
+    private static final String DEFAULT_NOMBRE = "Panadería";
     /** Días que puede usarse offline tras una validación "activo". */
     public static final int DIAS_CACHE_LICENCIA = 2;
 

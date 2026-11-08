@@ -74,7 +74,8 @@ public class conection {
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "nombre TEXT NOT NULL, "
                 + "precio REAL NOT NULL, "
-                + "costo REAL DEFAULT 0"
+                + "costo REAL DEFAULT 0, "
+                + "tipo TEXT DEFAULT 'Otro'"
                 + ");";
 
         String informes = "CREATE TABLE IF NOT EXISTS informes ("
@@ -111,7 +112,9 @@ public class conection {
                 + "cantidad REAL NOT NULL DEFAULT 0, "
                 + "unidad TEXT DEFAULT 'u', "
                 + "costo_unitario REAL DEFAULT 0, "
-                + "minimo REAL DEFAULT 0"
+                + "minimo REAL DEFAULT 0, "
+                + "categoria TEXT DEFAULT 'Ingrediente', "
+                + "proveedor_id INTEGER"
                 + ");";
 
         String ventaDetalle = "CREATE TABLE IF NOT EXISTS venta_detalle ("
@@ -126,6 +129,44 @@ public class conection {
                 + "costo_total REAL NOT NULL DEFAULT 0"
                 + ");";
 
+        String proveedores = "CREATE TABLE IF NOT EXISTS proveedores ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "nombre TEXT NOT NULL, "
+                + "telefono TEXT DEFAULT '', "
+                + "rubro TEXT DEFAULT 'General', "
+                + "nota TEXT DEFAULT ''"
+                + ");";
+
+        String compras = "CREATE TABLE IF NOT EXISTS compras ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "proveedor_id INTEGER, "
+                + "proveedor_nombre TEXT NOT NULL, "
+                + "fecha TEXT NOT NULL, "
+                + "total REAL NOT NULL DEFAULT 0, "
+                + "nota TEXT DEFAULT ''"
+                + ");";
+
+        String compraDetalle = "CREATE TABLE IF NOT EXISTS compra_detalle ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "compra_id INTEGER NOT NULL, "
+                + "stock_id INTEGER, "
+                + "item_nombre TEXT NOT NULL, "
+                + "cantidad REAL NOT NULL, "
+                + "costo_unit REAL NOT NULL DEFAULT 0, "
+                + "subtotal REAL NOT NULL DEFAULT 0, "
+                + "unidad TEXT DEFAULT 'u'"
+                + ");";
+
+        String mermas = "CREATE TABLE IF NOT EXISTS mermas ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "fecha TEXT NOT NULL, "
+                + "item_nombre TEXT NOT NULL, "
+                + "cantidad REAL NOT NULL, "
+                + "unidad TEXT DEFAULT 'u', "
+                + "motivo TEXT DEFAULT 'Sobrante del día', "
+                + "costo_estimado REAL DEFAULT 0"
+                + ");";
+
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(menu);
             stmt.execute(informes);
@@ -133,14 +174,19 @@ public class conection {
             stmt.execute(movimientos);
             stmt.execute(stock);
             stmt.execute(ventaDetalle);
+            stmt.execute(proveedores);
+            stmt.execute(compras);
+            stmt.execute(compraDetalle);
+            stmt.execute(mermas);
             ensureColumn(stmt, "menuPrecios", "costo", "REAL DEFAULT 0");
             ensureColumn(stmt, "menuPrecios", "tipo", "TEXT DEFAULT 'Otro'");
+            ensureColumn(stmt, "stock", "categoria", "TEXT DEFAULT 'Ingrediente'");
+            ensureColumn(stmt, "stock", "proveedor_id", "INTEGER");
         } catch (SQLException e) {
             System.out.println("Error al verificar tablas: " + e.getMessage());
         }
     }
 
-    /** Migración suave para DBs ya existentes (SQLite no tiene IF NOT EXISTS en ADD COLUMN). */
     private static void ensureColumn(Statement stmt, String table, String column, String definition) {
         try {
             stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
