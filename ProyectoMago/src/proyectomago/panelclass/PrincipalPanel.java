@@ -19,7 +19,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.awt.event.ActionListener;
-import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -64,8 +63,8 @@ public class PrincipalPanel extends JPanel {
 
     public PrincipalPanel() {
         setBackground(UiTheme.BG);
-        setLayout(new BorderLayout(12, 12));
-        setBorder(new EmptyBorder(14, 16, 14, 16));
+        setLayout(new BorderLayout(14, 14));
+        setBorder(new EmptyBorder(16, 18, 16, 18));
 
         add(buildHeader(), BorderLayout.NORTH);
         add(buildBody(), BorderLayout.CENTER);
@@ -76,19 +75,18 @@ public class PrincipalPanel extends JPanel {
     }
 
     private JPanel buildHeader() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
+        JPanel header = UiTheme.headerBar();
 
-        JPanel brand = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        JPanel brand = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 0));
         brand.setOpaque(false);
 
-        lblLogo.setPreferredSize(new Dimension(48, 48));
+        lblLogo.setPreferredSize(new Dimension(52, 52));
         lblTituloComercio.setFont(UiTheme.TITLE);
         lblTituloComercio.setForeground(UiTheme.INK);
 
-        JPanel titles = new JPanel(new BorderLayout());
+        JPanel titles = new JPanel(new BorderLayout(0, 2));
         titles.setOpaque(false);
-        JLabel subtitle = new JLabel("Gestión panaderías · caja · stock · proveedores");
+        JLabel subtitle = new JLabel("Gestión panaderías · venta · caja · stock");
         subtitle.setFont(UiTheme.SMALL);
         subtitle.setForeground(UiTheme.MUTED);
         titles.add(lblTituloComercio, BorderLayout.NORTH);
@@ -99,14 +97,14 @@ public class PrincipalPanel extends JPanel {
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         actions.setOpaque(false);
-        JButton btnCaja = secondaryButton("Caja");
-        JButton btnStock = secondaryButton("Stock");
-        JButton btnProveedores = secondaryButton("Proveedores");
-        JButton btnCompras = secondaryButton("Compras");
-        JButton btnMerma = secondaryButton("Merma");
-        JButton btnProductos = secondaryButton("Productos");
-        JButton btnInforme = secondaryButton("Informes");
-        JButton btnConfig = secondaryButton("Configuración");
+        JButton btnCaja = navButton("Caja");
+        JButton btnStock = navButton("Stock");
+        JButton btnProveedores = navButton("Proveedores");
+        JButton btnCompras = navButton("Compras");
+        JButton btnMerma = navButton("Merma");
+        JButton btnProductos = navButton("Productos");
+        JButton btnInforme = navButton("Informes");
+        JButton btnConfig = navButton("Configuración");
         btnCaja.addActionListener(e -> abrirCaja());
         btnStock.addActionListener(e -> abrirStock());
         btnProveedores.addActionListener(e -> abrirProveedores());
@@ -166,9 +164,9 @@ public class PrincipalPanel extends JPanel {
     }
 
     private JPanel buildLeftColumn() {
-        JPanel left = new JPanel(new BorderLayout(0, 12));
+        JPanel left = new JPanel(new BorderLayout(0, 14));
         left.setOpaque(false);
-        left.setPreferredSize(new Dimension(360, 0));
+        left.setPreferredSize(new Dimension(380, 0));
 
         left.add(buildAddProductCard(), BorderLayout.NORTH);
         left.add(buildClientCard(), BorderLayout.CENTER);
@@ -176,96 +174,103 @@ public class PrincipalPanel extends JPanel {
     }
 
     private JPanel buildAddProductCard() {
-        JPanel card = card("Agregar al pedido");
+        JPanel shell = UiTheme.sectionCard("Agregar al pedido");
+        JPanel card = UiTheme.cardBody(shell);
         card.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6, 4, 6, 4);
+        c.insets = new Insets(5, 2, 5, 2);
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1;
 
         c.gridx = 0; c.gridy = 0; c.gridwidth = 2;
-        card.add(fieldLabel("Producto"), c);
+        card.add(fieldLabel("PRODUCTO"), c);
         c.gridy = 1;
         styleCombo(comboProducto);
         card.add(comboProducto, c);
 
-        c.gridy = 2; c.gridwidth = 1; c.weightx = 0.55;
-        card.add(fieldLabel("Nota / detalle"), c);
-        c.gridx = 1; c.weightx = 0.45;
-        card.add(fieldLabel("Cant."), c);
+        c.gridy = 2; c.gridwidth = 1; c.weightx = 0.58;
+        card.add(fieldLabel("NOTA / DETALLE"), c);
+        c.gridx = 1; c.weightx = 0.42;
+        card.add(fieldLabel("CANT."), c);
 
-        c.gridx = 0; c.gridy = 3; c.weightx = 0.55;
+        c.gridx = 0; c.gridy = 3; c.weightx = 0.58;
         styleCombo(comboNota);
         card.add(comboNota, c);
-        c.gridx = 1; c.weightx = 0.45;
-        spinCantidad.setFont(UiTheme.BODY);
+        c.gridx = 1; c.weightx = 0.42;
+        UiTheme.styleSpinner(spinCantidad);
         card.add(spinCantidad, c);
 
         c.gridx = 0; c.gridy = 4; c.gridwidth = 2; c.weightx = 1;
-        card.add(fieldLabel("Precio unitario (editable)"), c);
+        card.add(fieldLabel("PRECIO UNITARIO"), c);
         c.gridy = 5;
         styleField(txtPrecioUnitario);
         card.add(txtPrecioUnitario, c);
 
         c.gridy = 6;
+        c.insets = new Insets(12, 2, 2, 2);
         JButton btnAdd = primaryButton("+ Sumar al pedido");
         btnAdd.addActionListener(e -> agregarProducto());
         card.add(btnAdd, c);
 
-        return card;
+        return shell;
     }
 
     private JPanel buildClientCard() {
-        JPanel card = card("Cliente / encargo");
+        JPanel shell = UiTheme.sectionCard("Cliente / encargo");
+        JPanel card = UiTheme.cardBody(shell);
         card.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6, 4, 6, 4);
+        c.insets = new Insets(5, 2, 5, 2);
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1;
         c.gridx = 0;
 
         c.gridy = 0;
-        card.add(fieldLabel("Cliente / dirección (opcional)"), c);
+        card.add(fieldLabel("CLIENTE / DIRECCIÓN"), c);
         c.gridy = 1;
         styleField(txtDireccion);
         card.add(txtDireccion, c);
 
         c.gridy = 2;
-        card.add(fieldLabel("Nota del pedido / encargo"), c);
+        card.add(fieldLabel("NOTA DEL PEDIDO"), c);
         c.gridy = 3;
         styleField(txtNotaCliente);
         card.add(txtNotaCliente, c);
 
         c.gridy = 4;
-        JLabel tip = new JLabel("<html>Tip: cobrá en caja, controlá stock y registrá<br>merma del día para no perder dinero.</html>");
+        c.insets = new Insets(10, 2, 2, 2);
+        JLabel tip = new JLabel("<html>Tip: cobrá en caja, controlá stock y registrá<br>merma del día para no perder margen.</html>");
         tip.setFont(UiTheme.SMALL);
         tip.setForeground(UiTheme.MUTED);
         card.add(tip, c);
 
-        return card;
+        return shell;
     }
 
     private JPanel buildOrderColumn() {
-        JPanel card = card("Pedido actual");
-        card.setLayout(new BorderLayout(0, 10));
+        JPanel shell = UiTheme.sectionCard("Pedido actual");
+        JPanel card = UiTheme.cardBody(shell);
+        card.setLayout(new BorderLayout(0, 12));
 
-        listaUI.setFont(UiTheme.MONO);
-        listaUI.setBackground(UiTheme.SURFACE);
+        listaUI.setFont(UiTheme.BODY);
+        listaUI.setBackground(UiTheme.SURFACE_ALT);
         listaUI.setForeground(UiTheme.INK);
         listaUI.setSelectionBackground(UiTheme.ACCENT);
         listaUI.setSelectionForeground(Color.WHITE);
-        listaUI.setFixedCellHeight(28);
+        listaUI.setFixedCellHeight(36);
+        listaUI.setBorder(new EmptyBorder(6, 8, 6, 8));
         JScrollPane scroll = new JScrollPane(listaUI);
-        scroll.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
+        UiTheme.styleScroll(scroll);
         card.add(scroll, BorderLayout.CENTER);
 
-        JPanel south = new JPanel(new BorderLayout(0, 10));
+        JPanel south = new JPanel(new BorderLayout(0, 12));
         south.setOpaque(false);
 
-        JPanel totalRow = new JPanel(new BorderLayout());
-        totalRow.setOpaque(false);
-        JLabel totalCaption = new JLabel("TOTAL");
-        totalCaption.setFont(UiTheme.HEADING);
+        JPanel totalRow = new UiTheme.RoundedPanel(14, UiTheme.SURFACE_ALT, UiTheme.BORDER);
+        totalRow.setLayout(new BorderLayout());
+        totalRow.setBorder(new EmptyBorder(14, 16, 14, 16));
+        JLabel totalCaption = new JLabel("TOTAL DEL PEDIDO");
+        totalCaption.setFont(UiTheme.SMALL_BOLD);
         totalCaption.setForeground(UiTheme.MUTED);
         lblTotal.setFont(UiTheme.TOTAL);
         lblTotal.setForeground(UiTheme.ACCENT);
@@ -290,7 +295,7 @@ public class PrincipalPanel extends JPanel {
         south.add(totalRow, BorderLayout.NORTH);
         south.add(buttons, BorderLayout.SOUTH);
         card.add(south, BorderLayout.SOUTH);
-        return card;
+        return shell;
     }
 
     private void agregarProducto() {
@@ -681,36 +686,15 @@ public class PrincipalPanel extends JPanel {
         return new ImageIcon(raw.getImage().getScaledInstance(w, h, java.awt.Image.SCALE_SMOOTH));
     }
 
-    private static JPanel card(String title) {
-        JPanel p = new JPanel();
-        p.setBackground(UiTheme.SURFACE);
-        p.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UiTheme.BORDER),
-                BorderFactory.createTitledBorder(
-                        BorderFactory.createEmptyBorder(8, 8, 8, 8),
-                        title,
-                        0, 0,
-                        UiTheme.HEADING,
-                        UiTheme.INK
-                )
-        ));
-        return p;
-    }
-
     private static JLabel fieldLabel(String text) {
         JLabel l = new JLabel(text);
-        l.setFont(UiTheme.SMALL);
+        l.setFont(UiTheme.SMALL_BOLD);
         l.setForeground(UiTheme.MUTED);
         return l;
     }
 
     private static void styleField(JTextField f) {
-        f.setFont(UiTheme.BODY);
-        f.setBackground(UiTheme.SURFACE_ALT);
-        f.setForeground(UiTheme.INK);
-        f.setCaretColor(UiTheme.ACCENT);
-        f.setBorder(UiTheme.fieldBorder());
-        f.setPreferredSize(new Dimension(10, 38));
+        UiTheme.styleField(f);
     }
 
     private static void styleCombo(JComboBox<?> combo) {
@@ -723,5 +707,9 @@ public class PrincipalPanel extends JPanel {
 
     private static JButton secondaryButton(String text) {
         return UiTheme.secondaryButton(text);
+    }
+
+    private static JButton navButton(String text) {
+        return UiTheme.navButton(text);
     }
 }

@@ -5,7 +5,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -24,21 +23,24 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.awt.Component;
+import java.awt.Desktop;
+import java.io.File;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
-import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SpinnerDateModel;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -76,19 +78,19 @@ public class InformesDialog extends JDialog {
 
     public InformesDialog(JFrame owner) {
         super(owner, "Informes panadería · ventas y ganancia", true);
-        setSize(1020, 780);
-        setMinimumSize(new Dimension(900, 680));
+        setSize(1100, 860);
+        setMinimumSize(new Dimension(960, 740));
         setLocationRelativeTo(owner);
         getContentPane().setBackground(UiTheme.BG);
-        setLayout(new BorderLayout(12, 12));
-        ((JPanel) getContentPane()).setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
+        setLayout(new BorderLayout(10, 10));
+        ((JPanel) getContentPane()).setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
 
         Calendar cal = Calendar.getInstance();
         Date hoy = cal.getTime();
-        cal.add(Calendar.DAY_OF_MONTH, -6);
-        Date hace7 = cal.getTime();
+        cal.add(Calendar.DAY_OF_MONTH, -29);
+        Date hace30 = cal.getTime();
 
-        spinDesde = new JSpinner(new SpinnerDateModel(hace7, null, null, Calendar.DAY_OF_MONTH));
+        spinDesde = new JSpinner(new SpinnerDateModel(hace30, null, null, Calendar.DAY_OF_MONTH));
         spinHasta = new JSpinner(new SpinnerDateModel(hoy, null, null, Calendar.DAY_OF_MONTH));
         spinDesde.setEditor(new JSpinner.DateEditor(spinDesde, "dd/MM/yyyy"));
         spinHasta.setEditor(new JSpinner.DateEditor(spinHasta, "dd/MM/yyyy"));
@@ -105,51 +107,69 @@ public class InformesDialog extends JDialog {
 
         chartTipo.setTitle("Ventas por tipo");
         chartResultado.setTitle("Resultado del período");
+        chartTipo.setPreferredSize(new Dimension(10, 200));
+        chartResultado.setPreferredSize(new Dimension(10, 200));
 
-        JPanel north = new JPanel(new BorderLayout(0, 12));
+        JPanel north = new JPanel(new BorderLayout(0, 10));
         north.setOpaque(false);
-        north.add(buildFiltros(), BorderLayout.NORTH);
-        north.add(buildKpis(), BorderLayout.CENTER);
+        north.add(buildTopBar(), BorderLayout.NORTH);
+        north.add(buildKpis(), BorderLayout.SOUTH);
 
-        JPanel charts = new JPanel(new GridLayout(1, 2, 14, 0));
+        JPanel charts = new JPanel(new GridLayout(1, 2, 12, 0));
         charts.setOpaque(false);
         charts.add(chartTipo);
         charts.add(chartResultado);
-        charts.setMinimumSize(new Dimension(10, 180));
-        charts.setPreferredSize(new Dimension(10, 230));
+        charts.setPreferredSize(new Dimension(10, 200));
+        charts.setMaximumSize(new Dimension(Integer.MAX_VALUE, 210));
 
+        JPanel detail = new UiTheme.RoundedPanel(16, UiTheme.SURFACE, UiTheme.BORDER);
+        detail.setLayout(new BorderLayout(0, 8));
+        detail.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
+        JLabel detailTitle = new JLabel("Detalle diario");
+        detailTitle.setFont(UiTheme.HEADING);
+        detailTitle.setForeground(UiTheme.INK);
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
-        scroll.getViewport().setBackground(UiTheme.SURFACE);
-        scroll.setMinimumSize(new Dimension(10, 160));
-        scroll.setPreferredSize(new Dimension(10, 220));
+        UiTheme.styleScroll(scroll);
+        detail.add(detailTitle, BorderLayout.NORTH);
+        detail.add(scroll, BorderLayout.CENTER);
 
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, charts, scroll);
-        split.setResizeWeight(0.42);
-        split.setDividerSize(8);
-        split.setBorder(null);
-        split.setOpaque(false);
-        split.setContinuousLayout(true);
+        // Tabla en CENTER para que siempre crezca; gráficos arriba con alto fijo.
+        JPanel center = new JPanel(new BorderLayout(0, 10));
+        center.setOpaque(false);
+        center.add(charts, BorderLayout.NORTH);
+        center.add(detail, BorderLayout.CENTER);
 
         add(north, BorderLayout.NORTH);
-        add(split, BorderLayout.CENTER);
+        add(center, BorderLayout.CENTER);
         add(buildFooter(), BorderLayout.SOUTH);
 
         cargarTiposCombo();
         buscar();
-        javax.swing.SwingUtilities.invokeLater(() -> split.setDividerLocation(0.48));
     }
 
-    private JPanel buildFiltros() {
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
-        panel.setOpaque(false);
-        panel.setBorder(UiTheme.cardBorder());
-        panel.setBackground(UiTheme.SURFACE);
+    private JPanel buildTopBar() {
+        JPanel shell = new UiTheme.RoundedPanel(16, UiTheme.SURFACE, UiTheme.BORDER);
+        shell.setLayout(new BorderLayout(0, 8));
+        shell.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
+
+        JPanel titleRow = new JPanel(new BorderLayout());
+        titleRow.setOpaque(false);
+        JLabel title = new JLabel("Informes");
+        title.setFont(UiTheme.HEADING);
+        title.setForeground(UiTheme.INK);
+        JLabel sub = new JLabel("Ventas, costos y margen del período");
+        sub.setFont(UiTheme.SMALL);
+        sub.setForeground(UiTheme.MUTED);
+        JPanel texts = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        texts.setOpaque(false);
+        texts.add(title);
+        texts.add(sub);
+        titleRow.add(texts, BorderLayout.WEST);
 
         JPanel row = new JPanel(new GridBagLayout());
         row.setOpaque(false);
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(4, 6, 4, 6);
+        c.insets = new Insets(2, 4, 2, 4);
         c.anchor = GridBagConstraints.WEST;
 
         c.gridx = 0; c.gridy = 0;
@@ -168,11 +188,11 @@ public class InformesDialog extends JDialog {
         row.add(label("Tipo"), c);
         c.gridx = 5;
         UiTheme.styleCombo(comboTipo);
-        comboTipo.setPreferredSize(new Dimension(120, 32));
+        comboTipo.setPreferredSize(new Dimension(120, 36));
         row.add(comboTipo, c);
 
         c.gridx = 6;
-        row.add(label("Ganancia mín."), c);
+        row.add(label("Gan. mín."), c);
         c.gridx = 7;
         styleField(txtGananciaMin);
         txtGananciaMin.setToolTipText("Solo días con ganancia ≥ este monto (vacío = sin filtro)");
@@ -183,39 +203,39 @@ public class InformesDialog extends JDialog {
         c.gridx = 8;
         row.add(btnBuscar, c);
 
-        JPanel atajos = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        c.gridx = 9;
+        JPanel atajos = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         atajos.setOpaque(false);
         atajos.add(chip("Hoy", this::rangoHoy));
         atajos.add(chip("7 días", this::rango7Dias));
-        atajos.add(chip("Este mes", this::rangoMes));
+        atajos.add(chip("30 días", this::rango30Dias));
+        atajos.add(chip("Mes", this::rangoMes));
         atajos.add(chip("Todo", this::rangoTodo));
+        row.add(atajos, c);
 
-        panel.add(row, BorderLayout.NORTH);
-        panel.add(atajos, BorderLayout.SOUTH);
-        return panel;
+        shell.add(titleRow, BorderLayout.NORTH);
+        shell.add(row, BorderLayout.CENTER);
+        return shell;
     }
 
     private JPanel buildKpis() {
-        JPanel row = new JPanel(new GridLayout(1, 4, 12, 0));
+        JPanel row = new JPanel(new GridLayout(1, 4, 10, 0));
         row.setOpaque(false);
-        row.add(kpiCard("Ventas", kpiVentas, UiTheme.INK));
-        row.add(kpiCard("Costo", kpiCosto, UiTheme.MUTED));
-        row.add(kpiCard("Ganancia", kpiGanancia, UiTheme.SUCCESS));
-        row.add(kpiCard("Margen", kpiMargen, UiTheme.ACCENT));
+        row.add(compactKpi("Ventas", kpiVentas, UiTheme.INK));
+        row.add(compactKpi("Costo", kpiCosto, UiTheme.MUTED));
+        row.add(compactKpi("Ganancia", kpiGanancia, UiTheme.SUCCESS));
+        row.add(compactKpi("Margen", kpiMargen, UiTheme.ACCENT));
         return row;
     }
 
-    private JPanel kpiCard(String title, JLabel valueLabel, Color valueColor) {
-        JPanel card = new JPanel(new BorderLayout(0, 4));
-        card.setBackground(UiTheme.SURFACE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UiTheme.BORDER),
-                BorderFactory.createEmptyBorder(14, 16, 14, 16)
-        ));
+    private static JPanel compactKpi(String title, JLabel valueLabel, Color valueColor) {
+        JPanel card = new UiTheme.RoundedPanel(12, UiTheme.SURFACE, UiTheme.BORDER);
+        card.setLayout(new BorderLayout(0, 2));
+        card.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
         JLabel t = new JLabel(title.toUpperCase());
-        t.setFont(UiTheme.SMALL);
+        t.setFont(UiTheme.SMALL_BOLD);
         t.setForeground(UiTheme.MUTED);
-        valueLabel.setFont(new Font("Segoe UI Semibold", Font.BOLD, 24));
+        valueLabel.setFont(UiTheme.KPI);
         valueLabel.setForeground(valueColor);
         card.add(t, BorderLayout.NORTH);
         card.add(valueLabel, BorderLayout.CENTER);
@@ -231,10 +251,13 @@ public class InformesDialog extends JDialog {
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actions.setOpaque(false);
+        JButton btnExcel = secondaryButton("Exportar Excel");
         JButton btnVista = secondaryButton("Vista para imprimir");
-        JButton btnCerrar = secondaryButton("Cerrar");
+        JButton btnCerrar = primaryButton("Cerrar");
+        btnExcel.addActionListener(e -> exportarExcel());
         btnVista.addActionListener(e -> mostrarVistaImpresion());
         btnCerrar.addActionListener(e -> dispose());
+        actions.add(btnExcel);
         actions.add(btnVista);
         actions.add(btnCerrar);
 
@@ -287,6 +310,15 @@ public class InformesDialog extends JDialog {
         Calendar cal = Calendar.getInstance();
         Date hasta = cal.getTime();
         cal.add(Calendar.DAY_OF_MONTH, -6);
+        spinDesde.setValue(cal.getTime());
+        spinHasta.setValue(hasta);
+        buscar();
+    }
+
+    private void rango30Dias() {
+        Calendar cal = Calendar.getInstance();
+        Date hasta = cal.getTime();
+        cal.add(Calendar.DAY_OF_MONTH, -29);
         spinDesde.setValue(cal.getTime());
         spinHasta.setValue(hasta);
         buscar();
@@ -471,6 +503,92 @@ public class InformesDialog extends JDialog {
         }
     }
 
+    private void exportarExcel() {
+        if (model.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "No hay datos para exportar. Aplicá un rango con ventas.");
+            return;
+        }
+
+        SimpleDateFormat show = new SimpleDateFormat("dd-MM-yyyy");
+        String desde = show.format((Date) spinDesde.getValue());
+        String hasta = show.format((Date) spinHasta.getValue());
+        String sugerido = "informe_" + desde + "_" + hasta + ".xls";
+
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Exportar informe a Excel");
+        chooser.setSelectedFile(new File(sugerido));
+        chooser.setFileFilter(new FileNameExtensionFilter("Excel (*.xls)", "xls"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File file = chooser.getSelectedFile();
+        if (!file.getName().toLowerCase().endsWith(".xls")) {
+            file = new File(file.getAbsolutePath() + ".xls");
+        }
+
+        try {
+            String nombre = ComercioConfig.get().getNombreComercio();
+            String tipo = String.valueOf(comboTipo.getSelectedItem());
+            List<String[]> rows = new ArrayList<>();
+            rows.add(new String[]{"__STYLE__Title", nombre});
+            rows.add(new String[]{"Informe de ventas y ganancia"});
+            rows.add(new String[]{"Desde", desde.replace('-', '/')});
+            rows.add(new String[]{"Hasta", hasta.replace('-', '/')});
+            rows.add(new String[]{"Tipo", tipo});
+            rows.add(new String[]{""});
+            rows.add(new String[]{"__STYLE__Header", "Resumen", "Monto"});
+            rows.add(new String[]{"Ventas", money(lastVentas)});
+            rows.add(new String[]{"Costo", money(lastCosto)});
+            rows.add(new String[]{"Ganancia", money(lastGanancia)});
+            double margen = lastVentas > 0 ? (lastGanancia * 100.0 / lastVentas) : 0;
+            rows.add(new String[]{"Margen %", String.valueOf(Math.round(margen))});
+            rows.add(new String[]{""});
+            rows.add(new String[]{"__STYLE__Header", "Fecha", "Ventas", "Costo", "Ganancia", "Margen"});
+
+            for (int i = 0; i < model.getRowCount(); i++) {
+                rows.add(new String[]{
+                    String.valueOf(model.getValueAt(i, 0)),
+                    stripMoney(model.getValueAt(i, 1)),
+                    stripMoney(model.getValueAt(i, 2)),
+                    stripMoney(model.getValueAt(i, 3)),
+                    stripPercent(model.getValueAt(i, 4))
+                });
+            }
+
+            ExcelExport.writeSheet(file, "Informe", rows);
+
+            int open = JOptionPane.showConfirmDialog(
+                    this,
+                    "Informe exportado:\n" + file.getAbsolutePath() + "\n\n¿Abrirlo ahora?",
+                    "Excel",
+                    JOptionPane.YES_NO_OPTION
+            );
+            if (open == JOptionPane.YES_OPTION && Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(file);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo exportar el Excel.\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static String stripMoney(Object value) {
+        if (value == null) {
+            return "0";
+        }
+        return String.valueOf(value).replace("$", "").replace(".", "").replace(",", ".").trim();
+    }
+
+    private static String stripPercent(Object value) {
+        if (value == null) {
+            return "0";
+        }
+        return String.valueOf(value).replace("%", "").trim();
+    }
+
     private void mostrarVistaImpresion() {
         if (model.getRowCount() == 0) {
             JOptionPane.showMessageDialog(this, "No hay datos para mostrar.");
@@ -585,27 +703,23 @@ public class InformesDialog extends JDialog {
 
     private static JLabel label(String text) {
         JLabel l = new JLabel(text);
-        l.setFont(UiTheme.BODY_BOLD);
-        l.setForeground(UiTheme.INK);
+        l.setFont(UiTheme.SMALL_BOLD);
+        l.setForeground(UiTheme.MUTED);
         return l;
     }
 
     private static void styleSpinner(JSpinner spinner) {
-        spinner.setFont(UiTheme.BODY);
-        spinner.setPreferredSize(new Dimension(120, 32));
+        UiTheme.styleSpinner(spinner);
+        spinner.setPreferredSize(new Dimension(118, 36));
     }
 
     private static void styleField(JTextField f) {
-        f.setFont(UiTheme.BODY);
-        f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(UiTheme.SURFACE_ALT);
-        f.setForeground(UiTheme.INK);
-        f.setCaretColor(UiTheme.ACCENT);
-        f.setPreferredSize(new Dimension(90, 32));
+        UiTheme.styleField(f);
+        f.setPreferredSize(new Dimension(90, 36));
     }
 
     private JButton chip(String text, Runnable action) {
-        JButton b = secondaryButton(text);
+        JButton b = UiTheme.navButton(text);
         b.addActionListener(e -> action.run());
         return b;
     }

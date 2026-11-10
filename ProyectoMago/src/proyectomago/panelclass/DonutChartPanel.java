@@ -88,8 +88,11 @@ public class DonutChartPanel extends JPanel {
         g2.setColor(UiTheme.SURFACE);
         g2.fillRoundRect(0, 0, w - 1, h - 1, 18, 18);
         g2.setColor(UiTheme.BORDER);
-        g2.setStroke(new BasicStroke(1f));
+        g2.setStroke(new BasicStroke(1.2f));
         g2.drawRoundRect(0, 0, w - 1, h - 1, 18, 18);
+        // Acento superior
+        g2.setColor(UiTheme.ACCENT);
+        g2.fillRoundRect(16, 10, 28, 3, 3, 3);
 
         int pad = 16;
         g2.setFont(UiTheme.HEADING);
