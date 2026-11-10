@@ -1,0 +1,26 @@
+GESTION PANADERIAS - INSTALACION EN PC DEL CLIENTE
+==================================================
+
+REQUISITO
+- Tener instalado Java 17 o superior
+  (https://www.java.com o Adoptium/Temurin)
+
+COMO USAR
+1. Descomprimi esta carpeta donde quieras (ej: C:\GestionPanaderias)
+2. Doble clic en Iniciar.bat
+3. En "Configuracion":
+   - Pone el nombre de la panaderia
+   - Subi el logo
+   - Elegi la impresora de tickets
+4. Carga productos, stock y proveedores
+
+CONTENIDO
+- ProyectoMago.jar     -> el programa (Gestion panaderias)
+- lib\                 -> driver SQLite
+- prueba.db            -> base VACIA (sin productos ni ventas)
+- login_bg.jpg         -> fondo del login
+- Iniciar.bat          -> arranque
+
+NOTA
+No hace falta internet. Todo corre local en la PC.
+Incluye caja, stock, proveedores, compras, merma e informes.
