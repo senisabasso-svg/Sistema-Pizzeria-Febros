@@ -37,21 +37,18 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
 /**
- * Pantalla principal POS para panadería: venta rápida, caja, stock, proveedores y merma.
+ * Pantalla principal POS para almacén / local 24 horas: venta rápida, caja, stock y proveedores.
  */
 public class PrincipalPanel extends JPanel {
 
     private final ArrayList<Pedido> listaPedidos = new ArrayList<>();
     private final DefaultListModel<Pedido> listModel = new DefaultListModel<>();
 
+    private final JTextField txtCodigo = new JTextField();
     private final JComboBox<String> comboProducto = new JComboBox<>();
-    private final JComboBox<String> comboNota = new JComboBox<>(new String[]{
-        "Sin nota", "Caliente", "Para llevar", "Integral", "Sin azúcar", "Sin TACC", "Encargo"
-    });
+    private final JTextField txtNota = new JTextField();
     private final JSpinner spinCantidad = new JSpinner(new SpinnerNumberModel(1, 1, 50, 1));
     private final JTextField txtPrecioUnitario = new JTextField();
-    private final JTextField txtDireccion = new JTextField();
-    private final JTextField txtNotaCliente = new JTextField();
     private final JLabel lblTotal = new JLabel("$0");
     private final JList<Pedido> listaUI = new JList<>(listModel);
     private final JLabel lblLogo = new JLabel();
@@ -71,7 +68,9 @@ public class PrincipalPanel extends JPanel {
 
         aplicarBranding();
         comboProducto.addActionListener(productoListener);
+        txtCodigo.addActionListener(e -> buscarPorCodigo());
         cargarMenu();
+        SwingUtilities.invokeLater(() -> txtCodigo.requestFocusInWindow());
     }
 
     private JPanel buildHeader() {
@@ -86,7 +85,7 @@ public class PrincipalPanel extends JPanel {
 
         JPanel titles = new JPanel(new BorderLayout(0, 2));
         titles.setOpaque(false);
-        JLabel subtitle = new JLabel("Gestión panaderías · venta · caja · stock");
+        JLabel subtitle = new JLabel("Local 24 horas · venta · caja · stock");
         subtitle.setFont(UiTheme.SMALL);
         subtitle.setForeground(UiTheme.MUTED);
         titles.add(lblTituloComercio, BorderLayout.NORTH);
@@ -144,7 +143,7 @@ public class PrincipalPanel extends JPanel {
 
         Window w = SwingUtilities.getWindowAncestor(this);
         if (w instanceof JFrame) {
-            ((JFrame) w).setTitle(cfg.getNombreComercio() + " · Gestión panaderías");
+            ((JFrame) w).setTitle(cfg.getNombreComercio() + " · Gestión almacenes");
         }
     }
 
@@ -169,7 +168,6 @@ public class PrincipalPanel extends JPanel {
         left.setPreferredSize(new Dimension(380, 0));
 
         left.add(buildAddProductCard(), BorderLayout.NORTH);
-        left.add(buildClientCard(), BorderLayout.CENTER);
         return left;
     }
 
@@ -183,66 +181,40 @@ public class PrincipalPanel extends JPanel {
         c.weightx = 1;
 
         c.gridx = 0; c.gridy = 0; c.gridwidth = 2;
-        card.add(fieldLabel("PRODUCTO"), c);
+        card.add(fieldLabel("CÓDIGO DE BARRAS"), c);
         c.gridy = 1;
+        styleField(txtCodigo);
+        card.add(txtCodigo, c);
+
+        c.gridy = 2;
+        card.add(fieldLabel("PRODUCTO"), c);
+        c.gridy = 3;
         styleCombo(comboProducto);
         card.add(comboProducto, c);
 
-        c.gridy = 2; c.gridwidth = 1; c.weightx = 0.58;
-        card.add(fieldLabel("NOTA / DETALLE"), c);
-        c.gridx = 1; c.weightx = 0.42;
-        card.add(fieldLabel("CANT."), c);
+        c.gridy = 4; c.gridwidth = 2; c.weightx = 1;
+        card.add(fieldLabel("NOTA"), c);
+        c.gridy = 5;
+        styleField(txtNota);
+        card.add(txtNota, c);
 
-        c.gridx = 0; c.gridy = 3; c.weightx = 0.58;
-        styleCombo(comboNota);
-        card.add(comboNota, c);
-        c.gridx = 1; c.weightx = 0.42;
+        c.gridx = 0; c.gridy = 6; c.gridwidth = 2; c.weightx = 1;
+        card.add(fieldLabel("CANT."), c);
+        c.gridy = 7;
         UiTheme.styleSpinner(spinCantidad);
         card.add(spinCantidad, c);
 
-        c.gridx = 0; c.gridy = 4; c.gridwidth = 2; c.weightx = 1;
+        c.gridx = 0; c.gridy = 8; c.gridwidth = 2; c.weightx = 1;
         card.add(fieldLabel("PRECIO UNITARIO"), c);
-        c.gridy = 5;
+        c.gridy = 9;
         styleField(txtPrecioUnitario);
         card.add(txtPrecioUnitario, c);
 
-        c.gridy = 6;
+        c.gridy = 10;
         c.insets = new Insets(12, 2, 2, 2);
         JButton btnAdd = primaryButton("+ Sumar al pedido");
         btnAdd.addActionListener(e -> agregarProducto());
         card.add(btnAdd, c);
-
-        return shell;
-    }
-
-    private JPanel buildClientCard() {
-        JPanel shell = UiTheme.sectionCard("Cliente / encargo");
-        JPanel card = UiTheme.cardBody(shell);
-        card.setLayout(new GridBagLayout());
-        GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(5, 2, 5, 2);
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 1;
-        c.gridx = 0;
-
-        c.gridy = 0;
-        card.add(fieldLabel("CLIENTE / DIRECCIÓN"), c);
-        c.gridy = 1;
-        styleField(txtDireccion);
-        card.add(txtDireccion, c);
-
-        c.gridy = 2;
-        card.add(fieldLabel("NOTA DEL PEDIDO"), c);
-        c.gridy = 3;
-        styleField(txtNotaCliente);
-        card.add(txtNotaCliente, c);
-
-        c.gridy = 4;
-        c.insets = new Insets(10, 2, 2, 2);
-        JLabel tip = new JLabel("<html>Tip: cobrá en caja, controlá stock y registrá<br>merma del día para no perder margen.</html>");
-        tip.setFont(UiTheme.SMALL);
-        tip.setForeground(UiTheme.MUTED);
-        card.add(tip, c);
 
         return shell;
     }
@@ -281,15 +253,12 @@ public class PrincipalPanel extends JPanel {
         buttons.setOpaque(false);
         JButton btnQuitar = secondaryButton("Quitar ítem");
         JButton btnVaciar = secondaryButton("Vaciar");
-        JButton btnEncargo = secondaryButton("Ticket encargo");
         JButton btnProcesar = primaryButton("Cobrar e imprimir");
         btnQuitar.addActionListener(e -> quitarSeleccionado());
         btnVaciar.addActionListener(e -> vaciarPedido());
-        btnEncargo.addActionListener(e -> imprimirRepartidor());
         btnProcesar.addActionListener(e -> procesarOrden());
         buttons.add(btnQuitar);
         buttons.add(btnVaciar);
-        buttons.add(btnEncargo);
         buttons.add(btnProcesar);
 
         south.add(totalRow, BorderLayout.NORTH);
@@ -311,13 +280,59 @@ public class PrincipalPanel extends JPanel {
             return;
         }
 
+        try {
+            spinCantidad.commitEdit();
+        } catch (Exception ignored) {
+            // Si el texto no es válido, se mantiene el valor anterior del modelo.
+        }
         int cantidad = (Integer) spinCantidad.getValue();
-        String nota = String.valueOf(comboNota.getSelectedItem());
+        String nota = txtNota.getText().trim();
         Pedido pedido = new Pedido(selected.toString(), precioTxt, nota, cantidad);
         listaPedidos.add(pedido);
         listModel.addElement(pedido);
         actualizarTotal();
         spinCantidad.setValue(1);
+        txtNota.setText("");
+        txtCodigo.setText("");
+        txtCodigo.requestFocusInWindow();
+    }
+
+    private void buscarPorCodigo() {
+        String codigo = txtCodigo.getText().trim();
+        if (codigo.isEmpty()) {
+            return;
+        }
+        String sql = "SELECT nombre FROM menuPrecios "
+                + "WHERE trim(COALESCE(sku, '')) <> '' AND lower(trim(sku)) = lower(?) "
+                + "ORDER BY id LIMIT 1";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, codigo);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    JOptionPane.showMessageDialog(this,
+                            "No hay un producto con el código " + codigo + ".");
+                    txtCodigo.requestFocusInWindow();
+                    txtCodigo.selectAll();
+                    return;
+                }
+                String nombre = rs.getString("nombre");
+                comboProducto.setSelectedItem(nombre);
+                if (!nombre.equals(String.valueOf(comboProducto.getSelectedItem()))) {
+                    for (int i = 0; i < comboProducto.getItemCount(); i++) {
+                        if (nombre.equalsIgnoreCase(comboProducto.getItemAt(i))) {
+                            comboProducto.setSelectedIndex(i);
+                            break;
+                        }
+                    }
+                }
+                txtCodigo.setText("");
+                txtCodigo.requestFocusInWindow();
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "No se pudo buscar el código.\n" + e.getMessage(),
+                    "Base de datos", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void quitarSeleccionado() {
@@ -367,13 +382,12 @@ public class PrincipalPanel extends JPanel {
         }
 
         double total = getTotalPedido();
-        String direccion = txtDireccion.getText().trim();
-        String nota = txtNotaCliente.getText().trim();
-        String ticket = TicketPrinter.buildSaleTicket(listaPedidos, direccion, nota);
+        String ticket = TicketPrinter.buildSaleTicket(listaPedidos);
 
         // Guardar venta SIEMPRE, aunque falle la impresora.
-        boolean guardado = registrarVenta(total);
-        TicketPrinter.PrintResult result = TicketPrinter.printCopies(ticket, 2);
+        ArrayList<String> sinStock = new ArrayList<>();
+        boolean guardado = registrarVenta(total, sinStock);
+        TicketPrinter.PrintResult result = TicketPrinter.printCopies(ticket, 1);
 
         if (!result.printed) {
             mostrarVistaPrevia("Vista previa del ticket", result.ticketText);
@@ -381,6 +395,10 @@ public class PrincipalPanel extends JPanel {
 
         String msg = (guardado ? "Venta registrada. " : "No se pudo guardar el informe. ")
                 + result.message;
+        if (guardado && !sinStock.isEmpty()) {
+            msg += "\n\nNo se descontó stock para: " + String.join(", ", sinStock)
+                    + ".\nCreá o alineá el nombre en Stock si corresponde.";
+        }
         JOptionPane.showMessageDialog(this, msg, "Pedido procesado",
                 guardado ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
 
@@ -388,132 +406,108 @@ public class PrincipalPanel extends JPanel {
             listaPedidos.clear();
             listModel.clear();
             actualizarTotal();
-            txtDireccion.setText("");
-            txtNotaCliente.setText("");
+            txtNota.setText("");
         }
-    }
-
-    private void imprimirRepartidor() {
-        if (listaPedidos.isEmpty() && txtNotaCliente.getText().isBlank() && txtDireccion.getText().isBlank()) {
-            JOptionPane.showMessageDialog(this, "No hay datos para el ticket de repartidor.");
-            return;
-        }
-
-        String direccion = txtDireccion.getText().trim();
-        if (direccion.isEmpty()) {
-            int opcion = JOptionPane.showConfirmDialog(this,
-                    "No hay cliente/dirección. ¿Imprimir igual?",
-                    "Ticket encargo", JOptionPane.YES_NO_OPTION);
-            if (opcion != JOptionPane.YES_OPTION) {
-                return;
-            }
-        }
-
-        StringBuilder detalle = new StringBuilder();
-        for (Pedido p : listaPedidos) {
-            detalle.append(p.toTicketLine()).append("\n");
-        }
-        if (!txtNotaCliente.getText().isBlank()) {
-            detalle.append("NOTA: ").append(txtNotaCliente.getText().trim()).append("\n");
-        }
-
-        String totalTxt = String.format("%.0f", getTotalPedido());
-        if (getTotalPedido() <= 0 && !txtNotaCliente.getText().isBlank()) {
-            // Permite imprimir solo con monto manual en la nota si hace falta.
-            totalTxt = txtNotaCliente.getText().trim();
-        }
-
-        String ticket = TicketPrinter.buildDeliveryTicket(totalTxt, direccion, detalle.toString());
-        TicketPrinter.PrintResult result = TicketPrinter.printCopies(ticket, 1);
-        if (!result.printed) {
-            mostrarVistaPrevia("Ticket repartidor", result.ticketText);
-        }
-        JOptionPane.showMessageDialog(this, result.message);
     }
 
     private boolean registrarVenta(double total) {
+        return registrarVenta(total, null);
+    }
+
+    private boolean registrarVenta(double total, ArrayList<String> sinStock) {
         Date ahora = new Date();
         String totalStr = String.valueOf(total);
-        conection conn = new conection();
-        try {
-            if (Boolean.TRUE.equals(existeInformeDiario(conn, ahora))) {
-                añadirInformeExistente(conn, ahora, totalStr);
-            } else {
-                sumoInforme(conn, ahora, totalStr);
+        try (Connection connection = new conection().getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                if (existeInformeDiario(connection, ahora)) {
+                    añadirInformeExistente(connection, ahora, totalStr);
+                } else {
+                    sumoInforme(connection, ahora, totalStr);
+                }
+                registrarDetalleVenta(connection, ahora);
+                descontarStockVenta(connection, sinStock);
+                connection.commit();
+                return true;
+            } catch (Exception e) {
+                connection.rollback();
+                System.out.println("Error al registrar venta: " + e.getMessage());
+                return false;
+            } finally {
+                connection.setAutoCommit(true);
             }
-            registrarDetalleVenta(ahora);
-            descontarStockVenta();
-            return true;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             System.out.println("Error al registrar venta: " + e.getMessage());
             return false;
         }
     }
 
-    /** Si el producto coincide con un ítem de stock, descuenta unidades vendidas. */
-    private void descontarStockVenta() {
-        String sql = "UPDATE stock SET cantidad = MAX(cantidad - ?, 0) WHERE lower(nombre) = lower(?)";
-        try (Connection connection = new conection().getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+    /** Si el producto coincide con un ítem de stock, descuenta solo ese ítem y nunca deja cantidad negativa. */
+    private void descontarStockVenta(Connection connection, ArrayList<String> sinStock) throws SQLException {
+        String sql = "UPDATE stock SET cantidad = MAX(cantidad - ?, 0) "
+                + "WHERE id = (SELECT id FROM stock WHERE lower(nombre) = lower(?) ORDER BY id LIMIT 1)";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             for (Pedido p : listaPedidos) {
                 ps.setInt(1, p.getCantidad());
                 ps.setString(2, p.getNombreProd());
-                ps.executeUpdate();
+                int updated = ps.executeUpdate();
+                if (updated == 0 && sinStock != null) {
+                    String nombre = p.getNombreProd();
+                    if (nombre != null && !sinStock.contains(nombre)) {
+                        sinStock.add(nombre);
+                    }
+                }
             }
-        } catch (SQLException e) {
-            System.out.println("No se pudo descontar stock: " + e.getMessage());
         }
     }
 
     /** Guarda ítems con tipo/costo para informes de ganancia y gráficos. */
-    private void registrarDetalleVenta(Date fecha) {
+    private void registrarDetalleVenta(Connection connection, Date fecha) throws SQLException {
         String ahora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(fecha);
         String sqlMeta = "SELECT COALESCE(tipo, 'Otro') AS tipo, COALESCE(costo, 0) AS costo "
-                + "FROM menuPrecios WHERE nombre = ? LIMIT 1";
+                + "FROM menuPrecios WHERE nombre = ? ORDER BY id LIMIT 1";
         String sqlIns = "INSERT INTO venta_detalle "
                 + "(fecha, producto, tipo, cantidad, precio_unit, costo_unit, subtotal, costo_total) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection connection = new conection().getConnection()) {
-            for (Pedido p : listaPedidos) {
-                String tipo = "Otro";
-                double costoUnit = 0;
-                try (PreparedStatement meta = connection.prepareStatement(sqlMeta)) {
-                    meta.setString(1, p.getNombreProd());
-                    try (ResultSet rs = meta.executeQuery()) {
-                        if (rs.next()) {
-                            tipo = rs.getString("tipo");
-                            if (tipo == null || tipo.isBlank()) {
-                                tipo = "Otro";
-                            }
-                            costoUnit = rs.getDouble("costo");
+        for (Pedido p : listaPedidos) {
+            String tipo = "Otro";
+            double costoUnit = 0;
+            try (PreparedStatement meta = connection.prepareStatement(sqlMeta)) {
+                meta.setString(1, p.getNombreProd());
+                try (ResultSet rs = meta.executeQuery()) {
+                    if (rs.next()) {
+                        tipo = rs.getString("tipo");
+                        if (tipo == null || tipo.isBlank()) {
+                            tipo = "Otro";
                         }
+                        costoUnit = rs.getDouble("costo");
                     }
                 }
-                double precioUnit = p.getPrecioUnitario();
-                double subtotal = p.getSubtotal();
-                double costoTotal = costoUnit * p.getCantidad();
-                try (PreparedStatement ins = connection.prepareStatement(sqlIns)) {
-                    ins.setString(1, ahora);
-                    ins.setString(2, p.getNombreProd());
-                    ins.setString(3, tipo);
-                    ins.setInt(4, p.getCantidad());
-                    ins.setDouble(5, precioUnit);
-                    ins.setDouble(6, costoUnit);
-                    ins.setDouble(7, subtotal);
-                    ins.setDouble(8, costoTotal);
-                    ins.executeUpdate();
-                }
             }
-        } catch (SQLException e) {
-            System.out.println("Error al guardar detalle de venta: " + e.getMessage());
-            throw new RuntimeException(e);
+            double precioUnit = p.getPrecioUnitario();
+            double subtotal = p.getSubtotal();
+            double costoTotal = costoUnit * p.getCantidad();
+            try (PreparedStatement ins = connection.prepareStatement(sqlIns)) {
+                ins.setString(1, ahora);
+                ins.setString(2, p.getNombreProd());
+                ins.setString(3, tipo);
+                ins.setInt(4, p.getCantidad());
+                ins.setDouble(5, precioUnit);
+                ins.setDouble(6, costoUnit);
+                ins.setDouble(7, subtotal);
+                ins.setDouble(8, costoTotal);
+                ins.executeUpdate();
+            }
         }
     }
 
     private void abrirInformes() {
         Window w = SwingUtilities.getWindowAncestor(this);
         JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
+        if (!AdminPin.pedir(frame)) {
+            return;
+        }
         InformesDialog dialog = new InformesDialog(frame);
         dialog.setVisible(true);
     }
@@ -609,44 +603,60 @@ public class PrincipalPanel extends JPanel {
     }
 
     public void sumoInforme(conection conn, Date dateInforme, String precioGlobal) {
-        // fechaActivo existe en DBs viejas como NOT NULL: se completa con la misma fecha.
-        String insertSql = "INSERT INTO informes (fecha, fechaActivo, total) VALUES (?, ?, ?)";
-        try (Connection connection = conn.getConnection();
-             PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            String fecha = dateFormat.format(dateInforme);
-            insertStmt.setString(1, fecha);
-            insertStmt.setString(2, fecha);
-            insertStmt.setDouble(3, Double.parseDouble(precioGlobal));
-            insertStmt.executeUpdate();
+        try (Connection connection = conn.getConnection()) {
+            sumoInforme(connection, dateInforme, precioGlobal);
         } catch (SQLException | NumberFormatException e) {
             System.out.println("Error al guardar informe: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
 
+    private void sumoInforme(Connection connection, Date dateInforme, String precioGlobal) throws SQLException {
+        // fechaActivo existe en DBs viejas como NOT NULL: se completa con la misma fecha.
+        String insertSql = "INSERT INTO informes (fecha, fechaActivo, total) VALUES (?, ?, ?)";
+        try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String fecha = dateFormat.format(dateInforme);
+            insertStmt.setString(1, fecha);
+            insertStmt.setString(2, fecha);
+            insertStmt.setDouble(3, Double.parseDouble(precioGlobal));
+            insertStmt.executeUpdate();
+        }
+    }
+
     public Boolean existeInformeDiario(conection conn, Date dateInforme) {
-        String selectSql = "SELECT 1 FROM informes WHERE DATE(fecha) = ? LIMIT 1";
-        try (Connection connection = conn.getConnection();
-             PreparedStatement selectStmt = connection.prepareStatement(selectSql)) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            selectStmt.setString(1, dateFormat.format(dateInforme));
-            try (ResultSet rs = selectStmt.executeQuery()) {
-                return rs.next();
-            }
+        try (Connection connection = conn.getConnection()) {
+            return existeInformeDiario(connection, dateInforme);
         } catch (SQLException e) {
             System.out.println("Error al verificar informe diario: " + e.getMessage());
             return false;
         }
     }
 
+    private boolean existeInformeDiario(Connection connection, Date dateInforme) throws SQLException {
+        String selectSql = "SELECT 1 FROM informes WHERE DATE(fecha) = ? LIMIT 1";
+        try (PreparedStatement selectStmt = connection.prepareStatement(selectSql)) {
+            selectStmt.setString(1, new SimpleDateFormat("yyyy-MM-dd").format(dateInforme));
+            try (ResultSet rs = selectStmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
     public void añadirInformeExistente(conection conn, Date dateInforme, String precioGlobal) {
-        String selectSql = "SELECT id, total FROM informes WHERE DATE(fecha) = ? LIMIT 1";
+        try (Connection connection = conn.getConnection()) {
+            añadirInformeExistente(connection, dateInforme, precioGlobal);
+        } catch (SQLException | NumberFormatException e) {
+            System.out.println("Error al actualizar informe existente: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void añadirInformeExistente(Connection connection, Date dateInforme, String precioGlobal) throws SQLException {
+        String selectSql = "SELECT id, total FROM informes WHERE DATE(fecha) = ? ORDER BY id LIMIT 1";
         String updateSql = "UPDATE informes SET total = ? WHERE id = ?";
-        try (Connection connection = conn.getConnection();
-             PreparedStatement selectStmt = connection.prepareStatement(selectSql)) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            selectStmt.setString(1, dateFormat.format(dateInforme));
+        try (PreparedStatement selectStmt = connection.prepareStatement(selectSql)) {
+            selectStmt.setString(1, new SimpleDateFormat("yyyy-MM-dd").format(dateInforme));
             try (ResultSet rs = selectStmt.executeQuery()) {
                 if (rs.next()) {
                     int idInforme = rs.getInt("id");
@@ -657,12 +667,9 @@ public class PrincipalPanel extends JPanel {
                         updateStmt.executeUpdate();
                     }
                 } else {
-                    sumoInforme(conn, dateInforme, precioGlobal);
+                    sumoInforme(connection, dateInforme, precioGlobal);
                 }
             }
-        } catch (SQLException | NumberFormatException e) {
-            System.out.println("Error al actualizar informe existente: " + e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 

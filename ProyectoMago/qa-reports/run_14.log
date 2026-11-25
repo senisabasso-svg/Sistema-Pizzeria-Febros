@@ -1,0 +1,298 @@
+
+Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT A1 FALLA | subtotal esperado 300, fue 30.0
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT A2 PASA | ComprasDialog.java:201-203 selectAll; tipar/pegar con selección => 70
+RESULT A3 PASA | condición 300% OK; aceptar persiste; cancel=early return en ComprasDialog.java:255-258 (click No UI: parcial vía código)
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT A4 PASA | avisa en sinStock + venta_detalle insertada; PrincipalPanel.java:390-397,446-460
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT A5 PASA | repoblarFormPorId StockDialog.java:346+; Actualizar conserva 7.0
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT A7 PASA | hidePopup presente en Productos/Proveedores/Stock + 1 invocación OK; AssertJ click real post-popup: NO VERIFICADO (IllegalComponentState sin showing)
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT A8 PASA | modelVentas rows=5; esperado=apertura+ventas+ent-sal; sin mov VENTA. CajaDialog.java:277-305
+RESULT A9 PASA | sin literales OK/Cancel/Yes/No/Message/Input en src; UIManager ES; botones nativos del OS: depende del locale Windows
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT A10 FALLA | ProductosDialog JTextField ancho=128 <=150 pref=java.awt.Dimension[width=128,height=36] (styleField preferredSize)
+RESULT A11 FALLA | con altura 140px la leyenda no entra (ly=146) DonutChartPanel.java:185-187 break — no lista todos en paneles chicos
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT A12 PASA | lblResumen HTML 2 líneas: <html>Apertura $1000 · Ventas $580 · Entradas $0 · Salidas $0<br><b>Esperado en caja $1580</b></html>
+RESULT A13 PASA | Catalogos.java fuente única; Productos/Stock/Proveedores/Informes
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT B1 DETAIL [0->cant=1, -1->cant=1, 999999->cant=1, abc->cant=1, ->cant=1, 1,5->cant=1, 1.5->cant=15]
+RESULT B1 FALLA | cantidad inválida termina en 1 por Pedido.java:19 Math.max y/o commitEdit swallow. [0->cant=1, -1->cant=1, 999999->cant=1, abc->cant=1, ->cant=1, 1,5->cant=1, 1.5->cant=15]
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT B2 FALLA | Productos acepta precio 0 (parseMonto=0 y guardarNuevo solo null-check) ProductosDialog.java:227-229 — vender a $0
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT B4 DETAIL ok=[] bad=[Pan de ñame:[SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku), Café "especial":[SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku), 🙂 Agua:[SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku), AAAAAAAAAAAAAAAAAAAA:[SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku)]
+RESULT B4 PASA | insertados=0 fallidos=4 [Pan de ñame:[SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku), Café "especial":[SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku), 🙂 Agua:[SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku), AAAAAAAAAAAAAAAAAAAA:[SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku)]
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT B5 PASA | early return PrincipalPanel.java:379-381; ventas before=17
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT B6 FALLA | venta registrada con 0 cajas abiertas — no hay validación de caja abierta en registrarVenta (PrincipalPanel.java:403+). Cobrar con caja CERRADA está permitido.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT B7 FALLA | doble registrarVenta insertó 2 ventas — no hay debounce en Cobrar (PrincipalPanel.procesarOrden)
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+Ruta de la base de datos: C:\Users\senis\proyectoPizzeria\ProyectoMago\dist\prueba.db
+Conexión a la base de datos establecida.
+RESULT B8 PASA | guard en CajaDialog.java:341; abiertas=1
+RESULT B9 NO_VERIFICADO | requiere carrera real hilos UI+DB; no hay test de concurrencia implementado sin instrumentar SQLite busy. Código: registrarVenta es sincrónico en EDT.
+RESULT B10 PASA | confirma exceso MermaDialog.java:188-195; stock floorea en 0
+RESULT B11 PASA | ComprasDialog.java:239-241 rechaza <=0
+RESULT B12 FALLA | 50 intentos PIN incorrecto sin bloqueo ni backoff (AdminPin.java / ComercioConfig). hitsFalsos=0
+
+Failures (10):
+  JUnit Jupiter:AlmacenQaSuite:A1_cantidadTipeada()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'A1_cantidadTipeada', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: A1: subtotal esperado 300, fue 30.0
+       org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:38)
+       org.junit.jupiter.api.Assertions.fail(Assertions.java:138)
+       AlmacenQaSuite.failCase(AlmacenQaSuite.java:101)
+       AlmacenQaSuite.A1_cantidadTipeada(AlmacenQaSuite.java:153)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+  JUnit Jupiter:AlmacenQaSuite:A6_productoCreaStockSinPisar()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'A6_productoCreaStockSinPisar', methodParameterTypes = '']
+    => org.sqlite.SQLiteException: [SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku)
+       org.sqlite.core.DB.newSQLException(DB.java:1135)
+       org.sqlite.core.DB.newSQLException(DB.java:1146)
+       org.sqlite.core.DB.execute(DB.java:941)
+       org.sqlite.core.DB.executeUpdate(DB.java:1010)
+       org.sqlite.jdbc3.JDBC3PreparedStatement.lambda$executeLargeUpdate$2(JDBC3PreparedStatement.java:117)
+       org.sqlite.jdbc3.JDBC3Statement.withConnectionTimeout(JDBC3Statement.java:429)
+       org.sqlite.jdbc3.JDBC3PreparedStatement.executeLargeUpdate(JDBC3PreparedStatement.java:116)
+       org.sqlite.jdbc3.JDBC3PreparedStatement.executeUpdate(JDBC3PreparedStatement.java:98)
+       AlmacenQaSuite.A6_productoCreaStockSinPisar(AlmacenQaSuite.java:478)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       [...]
+  JUnit Jupiter:AlmacenQaSuite:A10_camposAnchoMinimo()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'A10_camposAnchoMinimo', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: A10: ProductosDialog JTextField ancho=128 <=150 pref=java.awt.Dimension[width=128,height=36] (styleField preferredSize)
+       org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:38)
+       org.junit.jupiter.api.Assertions.fail(Assertions.java:138)
+       AlmacenQaSuite.failCase(AlmacenQaSuite.java:101)
+       AlmacenQaSuite.A10_camposAnchoMinimo(AlmacenQaSuite.java:685)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+  JUnit Jupiter:AlmacenQaSuite:A11_leyendaDonutTodosLosTipos()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'A11_leyendaDonutTodosLosTipos', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: A11: con altura 140px la leyenda no entra (ly=146) DonutChartPanel.java:185-187 break — no lista todos en paneles chicos
+       org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:38)
+       org.junit.jupiter.api.Assertions.fail(Assertions.java:138)
+       AlmacenQaSuite.failCase(AlmacenQaSuite.java:101)
+       AlmacenQaSuite.A11_leyendaDonutTodosLosTipos(AlmacenQaSuite.java:746)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+  JUnit Jupiter:AlmacenQaSuite:B1_cantidadBordes()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'B1_cantidadBordes', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: B1: cantidad inválida termina en 1 por Pedido.java:19 Math.max y/o commitEdit swallow. [0->cant=1, -1->cant=1, 999999->cant=1, abc->cant=1, ->cant=1, 1,5->cant=1, 1.5->cant=15]
+       org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:38)
+       org.junit.jupiter.api.Assertions.fail(Assertions.java:138)
+       AlmacenQaSuite.failCase(AlmacenQaSuite.java:101)
+       AlmacenQaSuite.B1_cantidadBordes(AlmacenQaSuite.java:847)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+  JUnit Jupiter:AlmacenQaSuite:B2_precioCostoCeroNegativo()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'B2_precioCostoCeroNegativo', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: B2: Productos acepta precio 0 (parseMonto=0 y guardarNuevo solo null-check) ProductosDialog.java:227-229 — vender a $0
+       org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:38)
+       org.junit.jupiter.api.Assertions.fail(Assertions.java:138)
+       AlmacenQaSuite.failCase(AlmacenQaSuite.java:101)
+       AlmacenQaSuite.B2_precioCostoCeroNegativo(AlmacenQaSuite.java:881)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+  JUnit Jupiter:AlmacenQaSuite:B3_skuBordes()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'B3_skuBordes', methodParameterTypes = '']
+    => org.sqlite.SQLiteException: [SQLITE_CONSTRAINT_UNIQUE] A UNIQUE constraint failed (UNIQUE constraint failed: menuPrecios.sku)
+       org.sqlite.core.DB.newSQLException(DB.java:1135)
+       org.sqlite.core.DB.newSQLException(DB.java:1146)
+       org.sqlite.core.DB.execute(DB.java:941)
+       org.sqlite.core.DB.executeUpdate(DB.java:1010)
+       org.sqlite.jdbc3.JDBC3PreparedStatement.lambda$executeLargeUpdate$2(JDBC3PreparedStatement.java:117)
+       org.sqlite.jdbc3.JDBC3Statement.withConnectionTimeout(JDBC3Statement.java:429)
+       org.sqlite.jdbc3.JDBC3PreparedStatement.executeLargeUpdate(JDBC3PreparedStatement.java:116)
+       org.sqlite.jdbc3.JDBC3PreparedStatement.executeUpdate(JDBC3PreparedStatement.java:98)
+       AlmacenQaSuite.B3_skuBordes(AlmacenQaSuite.java:903)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       [...]
+  JUnit Jupiter:AlmacenQaSuite:B6_cobrarCajaCerrada()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'B6_cobrarCajaCerrada', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: B6: venta registrada con 0 cajas abiertas — no hay validación de caja abierta en registrarVenta (PrincipalPanel.java:403+). Cobrar con caja CERRADA está permitido.
+       org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:38)
+       org.junit.jupiter.api.Assertions.fail(Assertions.java:138)
+       AlmacenQaSuite.failCase(AlmacenQaSuite.java:101)
+       AlmacenQaSuite.B6_cobrarCajaCerrada(AlmacenQaSuite.java:995)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+  JUnit Jupiter:AlmacenQaSuite:B7_dobleCobro()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'B7_dobleCobro', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: B7: doble registrarVenta insertó 2 ventas — no hay debounce en Cobrar (PrincipalPanel.procesarOrden)
+       org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:38)
+       org.junit.jupiter.api.Assertions.fail(Assertions.java:138)
+       AlmacenQaSuite.failCase(AlmacenQaSuite.java:101)
+       AlmacenQaSuite.B7_dobleCobro(AlmacenQaSuite.java:1015)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+  JUnit Jupiter:AlmacenQaSuite:B12_pinFuerzaBruta()
+    MethodSource [className = 'AlmacenQaSuite', methodName = 'B12_pinFuerzaBruta', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: B12: 50 intentos PIN incorrecto sin bloqueo ni backoff (AdminPin.java / ComercioConfig). hitsFalsos=0
+       org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:38)
+       org.junit.jupiter.api.Assertions.fail(Assertions.java:138)
+       AlmacenQaSuite.failCase(AlmacenQaSuite.java:101)
+       AlmacenQaSuite.B12_pinFuerzaBruta(AlmacenQaSuite.java:1108)
+       java.base/java.lang.reflect.Method.invoke(Method.java:568)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+Test run finished after 3094 ms
+[         4 containers found      ]
+[         0 containers skipped    ]
+[         4 containers started    ]
+[         0 containers aborted    ]
+[         4 containers successful ]
+[         0 containers failed     ]
+[        25 tests found           ]
+[         0 tests skipped         ]
+[        25 tests started         ]
+[         1 tests aborted         ]
+[        14 tests successful      ]
+[        10 tests failed          ]
+
+
+
+WARNING: Delegated to the 'execute' command.
+         This behaviour has been deprecated and will be removed in a future release.
+         Please use the 'execute' command directly.

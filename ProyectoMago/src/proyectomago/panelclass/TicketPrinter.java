@@ -24,7 +24,7 @@ public final class TicketPrinter {
     }
 
     /** @deprecated usar getLocalName() */
-    public static final String LOCAL_NAME = "Panadería";
+    public static final String LOCAL_NAME = "Almacén";
 
     public static class PrintResult {
         public final boolean printed;
@@ -38,7 +38,7 @@ public final class TicketPrinter {
         }
     }
 
-    public static String buildSaleTicket(List<Pedido> pedidos, String direccion, String notaCliente) {
+    public static String buildSaleTicket(List<Pedido> pedidos) {
         String nombre = getLocalName();
         StringBuilder sb = new StringBuilder();
         sb.append("--------------------------------\n");
@@ -53,35 +53,9 @@ public final class TicketPrinter {
         sb.append("--------------------------------\n");
         sb.append("ITEMS: ").append(pedidos.size()).append("\n");
         sb.append("TOTAL: $").append(String.format("%.0f", total)).append("\n");
-        if (direccion != null && !direccion.isBlank()) {
-            sb.append("DIR: ").append(direccion.trim()).append("\n");
-        }
-        if (notaCliente != null && !notaCliente.isBlank()) {
-            sb.append("NOTA: ").append(notaCliente.trim()).append("\n");
-        }
         sb.append("--------------------------------\n");
-        sb.append(center("Gracias · pan fresco del día")).append("\n");
+        sb.append(center("Gracias por su compra")).append("\n");
         sb.append("\n\n\n");
-        return sb.toString();
-    }
-
-    public static String buildDeliveryTicket(String totalTexto, String direccion, String detallePedido) {
-        String nombre = getLocalName();
-        StringBuilder sb = new StringBuilder();
-        sb.append("--------------------------------\n");
-        sb.append(center(nombre)).append("\n");
-        sb.append(center("TICKET ENCARGO")).append("\n");
-        sb.append("--------------------------------\n");
-        if (direccion != null && !direccion.isBlank()) {
-            sb.append("DIRECCION:\n").append(direccion.trim()).append("\n\n");
-        } else {
-            sb.append("RETIRO EN LOCAL\n\n");
-        }
-        if (detallePedido != null && !detallePedido.isBlank()) {
-            sb.append(detallePedido).append("\n");
-        }
-        sb.append("TOTAL: $").append(totalTexto).append("\n");
-        sb.append("--------------------------------\n\n\n");
         return sb.toString();
     }
 

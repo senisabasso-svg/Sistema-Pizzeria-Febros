@@ -1,0 +1,31 @@
+GESTION ALMACENES - INSTALACION EN PC DEL CLIENTE
+==================================================
+Actualizado: 20/11/2026 (correcciones de cantidad, compras, stock, caja, productos)
+
+REQUISITO
+- Tener instalado Java 17 o superior
+  (https://www.java.com o Adoptium/Temurin)
+
+COMO USAR
+1. Descomprimi esta carpeta donde quieras (ej: C:\GestionAlmacenes)
+2. Doble clic en Iniciar.bat
+3. En "Configuracion":
+   - Pone el nombre del local
+   - Subi el logo
+   - Elegi la impresora de tickets
+4. En "Administrar vendedores" carga quien abre la caja.
+   El PIN de administrador es 8521.
+   El mismo PIN se pide para entrar a Informes.
+5. Carga productos con su codigo de barras, stock y proveedores
+
+CONTENIDO
+- ProyectoMago.jar     -> el programa (Gestion almacenes)
+- lib\                 -> driver SQLite
+- prueba.db            -> base VACIA (sin productos ni ventas)
+- login_bg.jpg         -> fondo del login
+- Iniciar.bat          -> arranque
+
+NOTA
+No hace falta internet. Todo corre local en la PC.
+Incluye caja, vendedores, stock, proveedores, compras, merma e informes.
+Al abrir la caja se elige el vendedor. Cada producto puede llevar una nota escrita.

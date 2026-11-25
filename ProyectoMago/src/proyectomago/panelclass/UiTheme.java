@@ -30,7 +30,7 @@ import javax.swing.plaf.basic.BasicButtonUI;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 
 /**
- * Paleta FEBROS Gestión panaderías: navy profundo + naranja vibrante + blanco.
+ * Paleta FEBROS Gestión almacenes: navy profundo + naranja vibrante + blanco.
  */
 public final class UiTheme {
 

@@ -6,14 +6,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
 import java.util.Properties;
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 
 /**
- * Configuración local del comercio (marca, impresora y licencia/API).
+ * Configuración local del comercio (marca e impresora).
  * Se guarda junto al JAR para instalación portable.
  */
 public final class ComercioConfig {
@@ -29,10 +31,11 @@ public final class ComercioConfig {
     private static final String KEY_ACCESS_KEY = "accessKey";
     private static final String KEY_LAST_OK_AT = "lastStatusOkAt";
     private static final String KEY_LAST_STATUS = "lastStatus";
+    private static final String KEY_ADMIN_PIN_HASH = "adminPinHash";
 
-    private static final String DEFAULT_NOMBRE = "Panadería";
-    /** Días que puede usarse offline tras una validación "activo". */
-    public static final int DIAS_CACHE_LICENCIA = 2;
+    private static final String DEFAULT_NOMBRE = "Almacén";
+    private static final String PIN_SALT = "febros-almacen-pin-v1";
+    private static final String DEFAULT_ADMIN_PIN = "8521";
 
     private static ComercioConfig instance;
 
@@ -44,9 +47,11 @@ public final class ComercioConfig {
     private String accessKey = "";
     private long lastStatusOkAt = 0L;
     private String lastStatus = "";
+    private String adminPinHash = "";
 
     private ComercioConfig() {
         load();
+        ensureAdminPinHash();
     }
 
     public static synchronized ComercioConfig get() {
@@ -80,95 +85,38 @@ public final class ComercioConfig {
         this.impresora = impresora == null ? "" : impresora.trim();
     }
 
-    public String getApiUrl() {
-        return apiUrl == null ? "" : apiUrl.trim();
-    }
-
-    public void setApiUrl(String apiUrl) {
-        this.apiUrl = apiUrl == null ? "" : apiUrl.trim();
-    }
-
-    public String getIdCliente() {
-        return idCliente == null ? "" : idCliente.trim();
-    }
-
-    public void setIdCliente(String idCliente) {
-        this.idCliente = idCliente == null ? "" : idCliente.trim();
-    }
-
-    public String getAccessKey() {
-        return accessKey == null ? "" : accessKey.trim();
-    }
-
-    public void setAccessKey(String accessKey) {
-        this.accessKey = accessKey == null ? "" : accessKey.trim();
-    }
-
-    public long getLastStatusOkAt() {
-        return lastStatusOkAt;
-    }
-
-    public void setLastStatusOkAt(long lastStatusOkAt) {
-        this.lastStatusOkAt = lastStatusOkAt;
-    }
-
-    public String getLastStatus() {
-        return lastStatus == null ? "" : lastStatus;
-    }
-
-    public void setLastStatus(String lastStatus) {
-        this.lastStatus = lastStatus == null ? "" : lastStatus.trim();
-    }
-
-    public boolean tieneCredencialesLicencia() {
-        return !getApiUrl().isBlank() && !getIdCliente().isBlank() && !getAccessKey().isBlank();
-    }
-
-    /**
-     * true si la última validación "activo" sigue vigente (dentro de DIAS_CACHE_LICENCIA).
-     */
-    public boolean licenciaCacheVigente() {
-        if (lastStatusOkAt <= 0) {
+    public boolean matchesAdminPin(String pinPlain) {
+        if (pinPlain == null) {
             return false;
         }
-        if (!"activo".equalsIgnoreCase(lastStatus)) {
-            return false;
-        }
-        long maxAgeMs = DIAS_CACHE_LICENCIA * 24L * 60L * 60L * 1000L;
-        return (System.currentTimeMillis() - lastStatusOkAt) <= maxAgeMs;
+        ensureAdminPinHash();
+        return adminPinHash.equalsIgnoreCase(hashPin(pinPlain));
     }
 
-    public long millisRestantesCache() {
-        if (!licenciaCacheVigente()) {
-            return 0L;
+    private void ensureAdminPinHash() {
+        if (adminPinHash != null && !adminPinHash.isBlank()) {
+            return;
         }
-        long maxAgeMs = DIAS_CACHE_LICENCIA * 24L * 60L * 60L * 1000L;
-        return Math.max(0L, (lastStatusOkAt + maxAgeMs) - System.currentTimeMillis());
+        adminPinHash = hashPin(DEFAULT_ADMIN_PIN);
+        try {
+            save();
+        } catch (IOException e) {
+            System.out.println("No se pudo persistir adminPinHash: " + e.getMessage());
+        }
     }
 
-    /**
-     * Arma el endpoint de status a partir de la URL base o completa.
-     */
-    public String resolveStatusEndpoint() {
-        String base = getApiUrl().replaceAll("/+$", "");
-        if (base.isBlank()) {
-            return "";
+    public static String hashPin(String pinPlain) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest((PIN_SALT + ":" + pinPlain).getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new IllegalStateException("No se pudo hashear el PIN", e);
         }
-        String marker = "/api/local-systems/status";
-        if (base.toLowerCase().endsWith(marker)) {
-            return base;
-        }
-        return base + marker;
-    }
-
-    public void marcarLicenciaActiva() {
-        this.lastStatus = "activo";
-        this.lastStatusOkAt = System.currentTimeMillis();
-    }
-
-    public void marcarLicenciaInactiva() {
-        this.lastStatus = "inactivo";
-        // No tocamos lastStatusOkAt: la caché "activo" deja de valer por lastStatus.
     }
 
     public File getConfigDir() {
@@ -281,6 +229,7 @@ public final class ComercioConfig {
             idCliente = props.getProperty(KEY_ID_CLIENTE, "");
             accessKey = props.getProperty(KEY_ACCESS_KEY, "");
             lastStatus = props.getProperty(KEY_LAST_STATUS, "");
+            adminPinHash = props.getProperty(KEY_ADMIN_PIN_HASH, "");
             try {
                 lastStatusOkAt = Long.parseLong(props.getProperty(KEY_LAST_OK_AT, "0"));
             } catch (NumberFormatException e) {
@@ -296,14 +245,15 @@ public final class ComercioConfig {
         props.setProperty(KEY_NOMBRE, getNombreComercio());
         props.setProperty(KEY_LOGO, logoPath == null ? "" : logoPath);
         props.setProperty(KEY_IMPRESORA, impresora == null ? "" : impresora);
-        props.setProperty(KEY_API_URL, getApiUrl());
-        props.setProperty(KEY_ID_CLIENTE, getIdCliente());
-        props.setProperty(KEY_ACCESS_KEY, getAccessKey());
+        props.setProperty(KEY_API_URL, apiUrl == null ? "" : apiUrl);
+        props.setProperty(KEY_ID_CLIENTE, idCliente == null ? "" : idCliente);
+        props.setProperty(KEY_ACCESS_KEY, accessKey == null ? "" : accessKey);
         props.setProperty(KEY_LAST_OK_AT, String.valueOf(lastStatusOkAt));
-        props.setProperty(KEY_LAST_STATUS, getLastStatus());
+        props.setProperty(KEY_LAST_STATUS, lastStatus == null ? "" : lastStatus);
+        props.setProperty(KEY_ADMIN_PIN_HASH, adminPinHash == null ? "" : adminPinHash);
         File file = getPropertiesFile();
         try (OutputStream out = new FileOutputStream(file)) {
-            props.store(out, "Configuracion del comercio - Sistema Pizzeria");
+            props.store(out, "Configuracion del comercio - Gestion almacenes");
         }
     }
 }

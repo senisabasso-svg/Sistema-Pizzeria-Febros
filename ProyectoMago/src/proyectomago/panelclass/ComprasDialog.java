@@ -199,6 +199,8 @@ public class ComprasDialog extends JDialog {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     txtCosto.setText(String.format("%.0f", rs.getDouble(1)));
+                    txtCosto.requestFocusInWindow();
+                    txtCosto.selectAll();
                 }
             }
         } catch (Exception ignored) {
@@ -206,7 +208,22 @@ public class ComprasDialog extends JDialog {
         }
     }
 
+    private double costoActualStock(int stockId) {
+        String sql = "SELECT COALESCE(costo_unitario,0) FROM stock WHERE id = ?";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, stockId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getDouble(1) : 0;
+            }
+        } catch (SQLException e) {
+            return 0;
+        }
+    }
+
     private void registrarCompra() {
+        comboProveedor.hidePopup();
+        comboStock.hidePopup();
         KeyValue prov = (KeyValue) comboProveedor.getSelectedItem();
         KeyValue stock = (KeyValue) comboStock.getSelectedItem();
         if (prov == null) {
@@ -226,6 +243,20 @@ public class ComprasDialog extends JDialog {
         if (costo == null || costo < 0) {
             JOptionPane.showMessageDialog(this, "Costo unitario inválido.");
             return;
+        }
+
+        double costoAnterior = costoActualStock(stock.getKey());
+        if (costoAnterior > 0 && costo > costoAnterior * 3.0) {
+            int ok = JOptionPane.showConfirmDialog(this,
+                    "El costo nuevo ($" + String.format("%.0f", costo)
+                            + ") es mucho mayor al actual ($" + String.format("%.0f", costoAnterior)
+                            + ").\n¿Guardar igual?",
+                    "Confirmar costo", JOptionPane.YES_NO_OPTION);
+            if (ok != JOptionPane.YES_OPTION) {
+                txtCosto.requestFocusInWindow();
+                txtCosto.selectAll();
+                return;
+            }
         }
 
         double subtotal = cant * costo;

@@ -1,0 +1,25 @@
+A1|11/20|FLAKY|fail_runs=12,13,14,15,16,17,18,19,20|subtotal esperado 300, fue 30.0
+A2|20/20|PASA|fail_runs=-|ComprasDialog.java:201-203 selectAll; tipar/pegar con selección => 70
+A3|20/20|PASA|fail_runs=-|condición 300% OK; aceptar persiste; cancel=early return en ComprasDialog.java:255-258 (click No UI: parcial vía código)
+A4|20/20|PASA|fail_runs=-|avisa en sinStock + venta_detalle insertada; PrincipalPanel.java:390-397,446-460
+A5|20/20|PASA|fail_runs=-|repoblarFormPorId StockDialog.java:346+; Actualizar conserva 107.0
+A6|11/11|PASA|fail_runs=-|ProductosDialog.java:343-365; crea si falta, no pisa existente
+A7|20/20|PASA|fail_runs=-|hidePopup presente en Productos/Proveedores/Stock + 1 invocación OK; AssertJ click real post-popup: NO VERIFICADO (IllegalComponentState sin showing)
+A8|20/20|PASA|fail_runs=-|modelVentas rows=1; esperado=apertura+ventas+ent-sal; sin mov VENTA. CajaDialog.java:277-305
+A9|20/20|PASA|fail_runs=-|sin literales OK/Cancel/Yes/No/Message/Input en src; UIManager ES; botones nativos del OS: depende del locale Windows
+A10|0/20|FALLA|fail_runs=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|ProductosDialog JTextField ancho=128 <=150 pref=java.awt.Dimension[width=128,height=36] (styleField preferredSize)
+A11|0/20|FALLA|fail_runs=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|con altura 140px la leyenda no entra (ly=146) DonutChartPanel.java:185-187 break — no lista todos en paneles chicos
+A12|20/20|PASA|fail_runs=-|lblResumen HTML 2 líneas: <html>Apertura $1000 · Ventas $0 · Entradas $0 · Salidas $0<br><b>Esperado en caja $1000</b></html>
+A13|20/20|PASA|fail_runs=-|Catalogos.java fuente única; Productos/Stock/Proveedores/Informes
+B1|0/20|FALLA|fail_runs=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|cantidad inválida termina en 1 por Pedido.java:19 Math.max y/o commitEdit swallow. [0->cant=1, -1->cant=1, 999999->cant=1, abc->cant=1, ->cant=1, 1,5->cant=1, 1.5->cant=15]
+B2|0/20|FALLA|fail_runs=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|Productos acepta precio 0 (parseMonto=0 y guardarNuevo solo null-check) ProductosDialog.java:227-229 — vender a $0
+B3|11/11|PASA|fail_runs=-|dup UI+index; vacío bloqueado; 200 chars insertó=true (sin límite de longitud — posible hallazgo suave)
+B4|20/20|PASA|fail_runs=-|insertados=4 fallidos=0 []
+B5|20/20|PASA|fail_runs=-|early return PrincipalPanel.java:379-381; ventas before=0
+B6|0/20|FALLA|fail_runs=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|venta registrada con 0 cajas abiertas — no hay validación de caja abierta en registrarVenta (PrincipalPanel.java:403+). Cobrar con caja CERRADA está permitido.
+B7|0/20|FALLA|fail_runs=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|doble registrarVenta insertó 2 ventas — no hay debounce en Cobrar (PrincipalPanel.procesarOrden)
+B8|20/20|PASA|fail_runs=-|guard en CajaDialog.java:341; abiertas=1
+B9|0/20|NO_VERIFICADO|fail_runs=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|requiere carrera real hilos UI+DB; no hay test de concurrencia implementado sin instrumentar SQLite busy. Código: registrarVenta es sincrónico en EDT.
+B10|20/20|PASA|fail_runs=-|confirma exceso MermaDialog.java:188-195; stock floorea en 0
+B11|20/20|PASA|fail_runs=-|ComprasDialog.java:239-241 rechaza <=0
+B12|0/20|FALLA|fail_runs=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20|50 intentos PIN incorrecto sin bloqueo ni backoff (AdminPin.java / ComercioConfig). hitsFalsos=0

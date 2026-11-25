@@ -73,7 +73,7 @@ public class LoginPanel extends JPanel {
 
         JLabel product = new JLabel("<html><div style='text-align:center'>"
                 + "<span style='color:#F7FAFF'>Gestión </span>"
-                + "<span style='color:#FF8A1F'><i>panaderías</i></span>"
+                + "<span style='color:#FF8A1F'><i>almacenes</i></span>"
                 + "</div></html>", SwingConstants.CENTER);
         product.setFont(UiTheme.LOGIN_TITLE);
 

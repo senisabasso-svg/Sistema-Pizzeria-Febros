@@ -107,9 +107,16 @@ public class DonutChartPanel extends JPanel {
         }
 
         int chartTop = pad + 28;
-        int legendH = Math.min(90, 18 + slices.size() * 18);
+        int visibleSlices = 0;
+        for (Slice s : slices) {
+            if (s.value > 0) {
+                visibleSlices++;
+            }
+        }
+        int legendRows = Math.max(1, (visibleSlices + 1) / 2);
+        int legendH = Math.min(120, 18 + legendRows * 18);
         int chartSize = Math.min(w - pad * 2, h - chartTop - legendH - 12);
-        chartSize = Math.max(120, chartSize);
+        chartSize = Math.max(100, chartSize);
         int cx = w / 2;
         int cy = chartTop + chartSize / 2;
         int outer = chartSize;
@@ -164,25 +171,32 @@ public class DonutChartPanel extends JPanel {
             g2.drawString(centerValue, cx - fmVal.stringWidth(centerValue) / 2, cy + 14);
         }
 
-        // Leyenda
+        // Leyenda en 2 columnas para que entren todos los tipos.
         int ly = chartTop + chartSize + 10;
-        int lx = pad;
+        int colW = Math.max(140, (w - pad * 2) / 2);
+        int col = 0;
+        int rowY = ly;
         g2.setFont(UiTheme.SMALL);
         for (int i = 0; i < slices.size(); i++) {
             Slice s = slices.get(i);
             if (s.value <= 0) {
                 continue;
             }
-            if (ly + 16 > h - 8) {
+            if (rowY + 16 > h - 4) {
                 break;
             }
+            int lx = pad + col * colW;
             g2.setColor(s.color);
-            g2.fillRoundRect(lx, ly, 10, 10, 3, 3);
+            g2.fillRoundRect(lx, rowY, 10, 10, 3, 3);
             g2.setColor(UiTheme.INK);
             String pct = total > 0 ? Math.round(s.value * 100.0 / total) + "%" : "";
             String text = s.label + "  $" + String.format("%.0f", s.value) + "  " + pct;
-            g2.drawString(text, lx + 16, ly + 10);
-            ly += 18;
+            g2.drawString(text, lx + 16, rowY + 10);
+            col++;
+            if (col >= 2) {
+                col = 0;
+                rowY += 18;
+            }
         }
 
         g2.dispose();

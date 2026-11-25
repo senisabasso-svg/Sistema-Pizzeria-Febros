@@ -29,12 +29,12 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
 /**
- * Merma / sobrante del día (clave en panadería).
+ * Merma del local: vencidos, roturas y faltantes.
  */
 public class MermaDialog extends JDialog {
 
     private static final String[] MOTIVOS = {
-        "Sobrante del día", "Quemado / fallado", "Vencido", "Rotura", "Degustación", "Otro"
+        "Vencido", "Rotura", "Dañado", "Faltante", "Degustación", "Otro"
     };
 
     private final DefaultTableModel model;

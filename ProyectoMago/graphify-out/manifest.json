@@ -1,0 +1,206 @@
+{
+  "_seed_panaderia.py": {
+    "mtime": 1795212540.4290793,
+    "seen": 1795234515.6037698,
+    "ast_hash": "5d2237ab7d6a5c5d18e3278bc14f03de",
+    "semantic_hash": ""
+  },
+  "qa-tests/fix_fail.py": {
+    "mtime": 1795220447.494511,
+    "seen": 1795234515.6037743,
+    "ast_hash": "bd6bd739b19ac7421d0b75a0f6c6f312",
+    "semantic_hash": ""
+  },
+  "qa-tests/run_20.py": {
+    "mtime": 1795221110.7344177,
+    "seen": 1795234515.603776,
+    "ast_hash": "ea5c836d17a2d6fa04b3950902470277",
+    "semantic_hash": ""
+  },
+  "qa-tests/src/AlmacenQaSuite.java": {
+    "mtime": 1795220523.0928936,
+    "seen": 1795234515.6037781,
+    "ast_hash": "4189e993d2f7af5a0c94baee892cad3e",
+    "semantic_hash": ""
+  },
+  "qa-tests/src/QaSupport.java": {
+    "mtime": 1795220904.1895654,
+    "seen": 1795234515.6037796,
+    "ast_hash": "0d6de6d89dffcc8fff2850735346a2f6",
+    "semantic_hash": ""
+  },
+  "src/connectDatabase/conection.java": {
+    "mtime": 1795208880.8515408,
+    "seen": 1795234515.6037815,
+    "ast_hash": "fa770fdbf7d9f3fa8fe4901b843bf3a1",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/AdminPin.java": {
+    "mtime": 1795219862.6825156,
+    "seen": 1795234515.6037831,
+    "ast_hash": "dbc8602d1467825f9dcb5787057f2b80",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/CajaDialog.java": {
+    "mtime": 1795219835.5933504,
+    "seen": 1795234515.603785,
+    "ast_hash": "5d5b3711b86327595c56a2bed9c04742",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/Catalogos.java": {
+    "mtime": 1795219731.0519354,
+    "seen": 1795234515.6037865,
+    "ast_hash": "3456acf0cd55fcf5bcd72ce1752741d2",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/ComercioConfig.java": {
+    "mtime": 1795219857.9828,
+    "seen": 1795234515.6037886,
+    "ast_hash": "7d8374c9f298b4c1b58faef3925125cb",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/ComprasDialog.java": {
+    "mtime": 1795219713.682978,
+    "seen": 1795234515.60379,
+    "ast_hash": "8442b8ebee6a419246114b67367992f1",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/ConfiguracionDialog.java": {
+    "mtime": 1795208916.8760495,
+    "seen": 1795234515.6037922,
+    "ast_hash": "36adb2a1c19e8ba12d2366339456e19c",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/DonutChartPanel.java": {
+    "mtime": 1795219743.8417592,
+    "seen": 1795234515.6037939,
+    "ast_hash": "f777b6cc9fb9a92ea64df8b69689b18e",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/ExcelExport.java": {
+    "mtime": 1794272581.132851,
+    "seen": 1795234515.6037955,
+    "ast_hash": "b8c8c99bdea1621230c6bd3f773f6884",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/InformesDialog.java": {
+    "mtime": 1795219801.1318426,
+    "seen": 1795234515.6037972,
+    "ast_hash": "b0be6ea389645b7562e22386a86e7964",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/KeyValue.java": {
+    "mtime": 1794272581.132851,
+    "seen": 1795234515.6037989,
+    "ast_hash": "bd79566d36da63c1f9f55a1a88ea735e",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/LoginPanel.java": {
+    "mtime": 1795198013.453364,
+    "seen": 1795234515.6038005,
+    "ast_hash": "efa8094676f759ea871102ba9c44f0d8",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/MenuPrecios.java": {
+    "mtime": 1793761961.8134253,
+    "seen": 1795234515.6038022,
+    "ast_hash": "27e5331e369f0228d7e212e1b4a1c0b2",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/MermaDialog.java": {
+    "mtime": 1795198020.8900852,
+    "seen": 1795234515.6038039,
+    "ast_hash": "4a1541cede134273abe9418497987bad",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/Pedido.java": {
+    "mtime": 1794272581.1429565,
+    "seen": 1795234515.6038058,
+    "ast_hash": "875e4a4eb9412699b83d13ddbd8a501f",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/PrincipalPanel.java": {
+    "mtime": 1795219705.1316953,
+    "seen": 1795234515.6038074,
+    "ast_hash": "7f3005b97eeb80448a5542e36a31ad22",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/ProductosDialog.java": {
+    "mtime": 1795219793.0015492,
+    "seen": 1795234515.603809,
+    "ast_hash": "f49e06727f91ce35d39189af9967b17b",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/ProveedoresDialog.java": {
+    "mtime": 1795219763.3849654,
+    "seen": 1795234515.6038115,
+    "ast_hash": "b2054b03471914d18b6304eb8bb1ca19",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/ProyectoMago.java": {
+    "mtime": 1795219736.381731,
+    "seen": 1795234515.6038134,
+    "ast_hash": "c2b2f131f48e226f1ba11307133b26e2",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/StockDialog.java": {
+    "mtime": 1795219774.9215558,
+    "seen": 1795234515.6038148,
+    "ast_hash": "2841b3aa75fb9a7838e6290db8829ff3",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/TicketPrinter.java": {
+    "mtime": 1795209362.534408,
+    "seen": 1795234515.6038167,
+    "ast_hash": "195c83788314ade95284e26271345e00",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/UiTheme.java": {
+    "mtime": 1795198014.4609332,
+    "seen": 1795234515.6038184,
+    "ast_hash": "e71f66fb4afdf1c7f94026f4bfa71cee",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/VendedoresDialog.java": {
+    "mtime": 1795208895.075043,
+    "seen": 1795234515.6038203,
+    "ast_hash": "669fd16427b016315f1eaf9d1c2b61c9",
+    "semantic_hash": ""
+  },
+  "qa-reports/REPORTE_QA.md": {
+    "mtime": 1795222969.0581748,
+    "seen": 1795234515.603822,
+    "ast_hash": "973b7fe7fc111f12c0d76806a9eb486a",
+    "semantic_hash": ""
+  },
+  "qa-reports/summary.txt": {
+    "mtime": 1795221076.091003,
+    "seen": 1795234515.6038237,
+    "ast_hash": "0dace6126a901e7e3cfaec632860bf69",
+    "semantic_hash": ""
+  },
+  "descarga.png": {
+    "mtime": 1739149456.504842,
+    "seen": 1795234515.603825,
+    "ast_hash": "73c574ef333537680eac60ed8512b38d",
+    "semantic_hash": ""
+  },
+  "dowland.jpg": {
+    "mtime": 1735667752.8802083,
+    "seen": 1795234515.603827,
+    "ast_hash": "b53a0760d96dac5021c6224af0a69406",
+    "semantic_hash": ""
+  },
+  "login_bg.jpg": {
+    "mtime": 1794172612.3632133,
+    "seen": 1795234515.6038284,
+    "ast_hash": "f611252801e802bba46f4d882862796a",
+    "semantic_hash": ""
+  },
+  "src/proyectomago/panelclass/dowland.jpg": {
+    "mtime": 1735665685.637582,
+    "seen": 1795234515.6038303,
+    "ast_hash": "d6e828690e7afcd7cf3300260ed22425",
+    "semantic_hash": ""
+  }
+}

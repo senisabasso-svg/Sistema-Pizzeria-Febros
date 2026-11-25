@@ -12,7 +12,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -22,6 +24,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
@@ -34,6 +37,8 @@ public class CajaDialog extends JDialog {
 
     private final DefaultTableModel modelMov;
     private final JTable tableMov;
+    private final DefaultTableModel modelVentas;
+    private final JTable tableVentas;
     private final JLabel lblEstado = new JLabel(" ");
     private final JLabel lblResumen = new JLabel(" ");
     private final JTextField txtMonto = new JTextField(10);
@@ -43,10 +48,12 @@ public class CajaDialog extends JDialog {
     private Integer cajaIdAbierta;
     private double montoApertura;
     private String fechaApertura;
+    private String vendedorAbierto = "";
 
     public CajaDialog(JFrame owner) {
         super(owner, "Caja diaria · ingresos y egresos", true);
-        setSize(720, 520);
+        setSize(860, 620);
+        setMinimumSize(new Dimension(780, 560));
         setLocationRelativeTo(owner);
         getContentPane().setBackground(UiTheme.BG);
         setLayout(new BorderLayout(12, 12));
@@ -67,11 +74,49 @@ public class CajaDialog extends JDialog {
         tableMov.getColumnModel().getColumn(0).setMaxWidth(0);
         tableMov.getColumnModel().getColumn(0).setPreferredWidth(0);
 
+        modelVentas = new DefaultTableModel(new Object[]{"Hora", "Producto", "Cant.", "Subtotal"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        tableVentas = new JTable(modelVentas);
+        tableVentas.setFont(UiTheme.BODY);
+        tableVentas.setRowHeight(26);
+        tableVentas.getTableHeader().setFont(UiTheme.BODY_BOLD);
+        tableVentas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
         add(buildHeader(), BorderLayout.NORTH);
-        add(new JScrollPane(tableMov), BorderLayout.CENTER);
+        add(buildCenterTables(), BorderLayout.CENTER);
         add(buildFooter(), BorderLayout.SOUTH);
 
         refrescar();
+    }
+
+    private JPanel buildCenterTables() {
+        JPanel movShell = UiTheme.sectionCard("Movimientos (entradas / salidas)");
+        JPanel movBody = UiTheme.cardBody(movShell);
+        movBody.setLayout(new BorderLayout());
+        JScrollPane scrollMov = new JScrollPane(tableMov);
+        UiTheme.styleScroll(scrollMov);
+        movBody.add(scrollMov, BorderLayout.CENTER);
+
+        JPanel ventaShell = UiTheme.sectionCard("Ventas del turno");
+        JPanel ventaBody = UiTheme.cardBody(ventaShell);
+        ventaBody.setLayout(new BorderLayout());
+        JScrollPane scrollVen = new JScrollPane(tableVentas);
+        UiTheme.styleScroll(scrollVen);
+        ventaBody.add(scrollVen, BorderLayout.CENTER);
+
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, movShell, ventaShell);
+        split.setResizeWeight(0.55);
+        split.setBorder(null);
+        split.setOpaque(false);
+
+        JPanel wrap = new JPanel(new BorderLayout());
+        wrap.setOpaque(false);
+        wrap.add(split, BorderLayout.CENTER);
+        return wrap;
     }
 
     private JPanel buildHeader() {
@@ -83,7 +128,7 @@ public class CajaDialog extends JDialog {
         lblResumen.setFont(UiTheme.BODY);
         lblResumen.setForeground(UiTheme.MUTED);
 
-        JPanel titles = new JPanel(new BorderLayout());
+        JPanel titles = new JPanel(new BorderLayout(0, 4));
         titles.setOpaque(false);
         titles.add(lblEstado, BorderLayout.NORTH);
         titles.add(lblResumen, BorderLayout.SOUTH);
@@ -152,9 +197,11 @@ public class CajaDialog extends JDialog {
         cajaIdAbierta = null;
         montoApertura = 0;
         fechaApertura = null;
+        vendedorAbierto = "";
         modelMov.setRowCount(0);
+        modelVentas.setRowCount(0);
 
-        String sqlCaja = "SELECT id, fecha_apertura, monto_apertura FROM cajas "
+        String sqlCaja = "SELECT id, fecha_apertura, monto_apertura, COALESCE(vendedor, '') AS vendedor FROM cajas "
                 + "WHERE estado = 'ABIERTA' ORDER BY id DESC LIMIT 1";
         try (Connection connection = new conection().getConnection();
              PreparedStatement ps = connection.prepareStatement(sqlCaja);
@@ -163,6 +210,10 @@ public class CajaDialog extends JDialog {
                 cajaIdAbierta = rs.getInt("id");
                 montoApertura = rs.getDouble("monto_apertura");
                 fechaApertura = rs.getString("fecha_apertura");
+                vendedorAbierto = rs.getString("vendedor");
+                if (vendedorAbierto == null) {
+                    vendedorAbierto = "";
+                }
             }
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al leer caja: " + ex.getMessage(),
@@ -173,11 +224,12 @@ public class CajaDialog extends JDialog {
         if (cajaIdAbierta == null) {
             lblEstado.setText("Caja cerrada");
             lblEstado.setForeground(UiTheme.MUTED);
-            lblResumen.setText("Abrí la caja para empezar el día y registrar movimientos.");
+            lblResumen.setText("<html>Abrí la caja para empezar el turno<br>y registrar movimientos.</html>");
             return;
         }
 
         cargarMovimientos();
+        cargarVentasTurno();
         actualizarResumen();
     }
 
@@ -213,11 +265,41 @@ public class CajaDialog extends JDialog {
         double ventas = ventasDelDia();
         double esperado = montoApertura + ventas + entradas - salidas;
 
-        lblEstado.setText("Caja abierta · #" + cajaIdAbierta);
+        String quien = vendedorAbierto.isBlank() ? "" : " · " + vendedorAbierto;
+        lblEstado.setText("Caja abierta · #" + cajaIdAbierta + quien);
         lblEstado.setForeground(UiTheme.SUCCESS);
         lblResumen.setText(String.format(
-                "Apertura $%.0f  ·  Ventas $%.0f  ·  Entradas $%.0f  ·  Salidas $%.0f  ·  Esperado en caja $%.0f",
+                "<html>Apertura $%.0f · Ventas $%.0f · Entradas $%.0f · Salidas $%.0f<br>"
+                        + "<b>Esperado en caja $%.0f</b></html>",
                 montoApertura, ventas, entradas, salidas, esperado));
+    }
+
+    private void cargarVentasTurno() {
+        modelVentas.setRowCount(0);
+        if (fechaApertura == null || fechaApertura.isBlank()) {
+            return;
+        }
+        String sql = "SELECT fecha, producto, cantidad, subtotal FROM venta_detalle "
+                + "WHERE fecha >= ? ORDER BY id DESC";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, fechaApertura);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String fecha = rs.getString("fecha");
+                    String hora = fecha != null && fecha.length() >= 19 ? fecha.substring(11, 19) : fecha;
+                    modelVentas.addRow(new Object[]{
+                        hora,
+                        rs.getString("producto"),
+                        rs.getInt("cantidad"),
+                        "$" + String.format("%.0f", rs.getDouble("subtotal"))
+                    });
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar ventas del turno: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private double sumarMovimientos(String tipo) {
@@ -237,15 +319,15 @@ public class CajaDialog extends JDialog {
         }
     }
 
+    /** Ventas desde que se abrió esta caja, aunque el turno cruce la medianoche. */
     private double ventasDelDia() {
-        String dia = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-        if (fechaApertura != null && fechaApertura.length() >= 10) {
-            dia = fechaApertura.substring(0, 10);
+        if (fechaApertura == null || fechaApertura.isBlank()) {
+            return 0;
         }
-        String sql = "SELECT COALESCE(SUM(total), 0) FROM informes WHERE DATE(fecha) = ?";
+        String sql = "SELECT COALESCE(SUM(subtotal), 0) FROM venta_detalle WHERE fecha >= ?";
         try (Connection connection = new conection().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, dia);
+            ps.setString(1, fechaApertura);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getDouble(1) : 0;
             }
@@ -260,30 +342,85 @@ public class CajaDialog extends JDialog {
             return;
         }
 
-        String montoTxt = JOptionPane.showInputDialog(this,
-                "Monto inicial en caja (efectivo al abrir):", "0");
-        if (montoTxt == null) {
+        List<String> vendedores = listarVendedores();
+        if (vendedores.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "No hay vendedores. Crealos en Configuración con el PIN de administrador.");
             return;
         }
-        Double monto = parseMonto(montoTxt.trim());
+
+        JComboBox<String> comboVendedor = new JComboBox<>(vendedores.toArray(new String[0]));
+        UiTheme.styleCombo(comboVendedor);
+        comboVendedor.setPreferredSize(new Dimension(220, 34));
+        JTextField txtApertura = new JTextField("0", 10);
+        styleField(txtApertura);
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(UiTheme.SURFACE);
+        panel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(4, 4, 4, 4);
+        g.anchor = GridBagConstraints.WEST;
+        g.gridx = 0;
+        g.gridy = 0;
+        panel.add(label("Vendedor"), g);
+        g.gridy = 1;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(comboVendedor, g);
+        g.gridy = 2;
+        g.fill = GridBagConstraints.NONE;
+        panel.add(label("Monto inicial en caja"), g);
+        g.gridy = 3;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(txtApertura, g);
+
+        int ok = JOptionPane.showConfirmDialog(this, panel, "Abrir caja",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (ok != JOptionPane.OK_OPTION) {
+            return;
+        }
+        String vendedor = String.valueOf(comboVendedor.getSelectedItem()).trim();
+        if (vendedor.isEmpty() || "null".equals(vendedor)) {
+            JOptionPane.showMessageDialog(this, "Seleccioná un vendedor.");
+            return;
+        }
+        Double monto = parseMonto(txtApertura.getText().trim());
         if (monto == null) {
             JOptionPane.showMessageDialog(this, "Ingresá un monto válido.");
             return;
         }
 
         String ahora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-        String sql = "INSERT INTO cajas (fecha_apertura, monto_apertura, estado) VALUES (?, ?, 'ABIERTA')";
+        String sql = "INSERT INTO cajas (fecha_apertura, monto_apertura, estado, vendedor) VALUES (?, ?, 'ABIERTA', ?)";
         try (Connection connection = new conection().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, ahora);
             ps.setDouble(2, monto);
+            ps.setString(3, vendedor);
             ps.executeUpdate();
-            JOptionPane.showMessageDialog(this, "Caja abierta con $" + String.format("%.0f", monto));
+            JOptionPane.showMessageDialog(this,
+                    "Caja abierta por " + vendedor + " con $" + String.format("%.0f", monto));
             refrescar();
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al abrir caja: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private List<String> listarVendedores() {
+        List<String> nombres = new ArrayList<>();
+        String sql = "SELECT nombre FROM vendedores ORDER BY nombre COLLATE NOCASE";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                nombres.add(rs.getString("nombre"));
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "No se pudieron leer los vendedores: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return nombres;
     }
 
     private void cerrarCaja() {
@@ -297,9 +434,14 @@ public class CajaDialog extends JDialog {
         double ventas = ventasDelDia();
         double esperado = montoApertura + ventas + entradas - salidas;
 
-        String contadoTxt = JOptionPane.showInputDialog(this,
+        String contadoTxt = (String) JOptionPane.showInputDialog(
+                this,
                 "Esperado en caja: $" + String.format("%.0f", esperado)
                         + "\n\n¿Cuánto contaste en efectivo?",
+                "Cerrar caja",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                null,
                 String.format("%.0f", esperado));
         if (contadoTxt == null) {
             return;
@@ -366,6 +508,7 @@ public class CajaDialog extends JDialog {
             txtMonto.setText("");
             txtConcepto.setText("");
             cargarMovimientos();
+            cargarVentasTurno();
             actualizarResumen();
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al registrar: " + ex.getMessage(),

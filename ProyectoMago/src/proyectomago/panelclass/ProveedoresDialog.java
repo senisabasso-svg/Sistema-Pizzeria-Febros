@@ -26,25 +26,21 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
 /**
- * Agenda de proveedores de panadería (harina, lácteos, packaging, etc.).
+ * Agenda de proveedores de almacén (bebidas, almacén, limpieza, etc.).
  */
 public class ProveedoresDialog extends JDialog {
-
-    private static final String[] RUBROS = {
-        "Harinas y granos", "Lácteos", "Fiambres", "Huevos", "Packaging",
-        "Bebidas", "Congelados", "Limpieza", "General"
-    };
 
     private final DefaultTableModel model;
     private final JTable table;
     private final JTextField txtNombre = new JTextField(18);
     private final JTextField txtTelefono = new JTextField(12);
-    private final JComboBox<String> comboRubro = new JComboBox<>(RUBROS);
+    private final JComboBox<String> comboRubro = new JComboBox<>(Catalogos.RUBROS_PROVEEDOR);
     private final JTextField txtNota = new JTextField(22);
 
     public ProveedoresDialog(JFrame owner) {
         super(owner, "Proveedores", true);
         setSize(720, 480);
+        setMinimumSize(new Dimension(720, 480));
         setLocationRelativeTo(owner);
         getContentPane().setBackground(UiTheme.BG);
         setLayout(new BorderLayout(10, 10));
@@ -89,28 +85,32 @@ public class ProveedoresDialog extends JDialog {
         c.insets = new Insets(4, 4, 4, 4);
         c.anchor = GridBagConstraints.WEST;
 
-        c.gridx = 0; c.gridy = 0;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1;
+
+        c.gridx = 0; c.gridy = 0; c.weightx = 0;
         form.add(label("Nombre"), c);
-        c.gridx = 1;
+        c.gridx = 1; c.weightx = 1;
         styleField(txtNombre);
         form.add(txtNombre, c);
 
-        c.gridx = 2;
+        c.gridx = 2; c.weightx = 0;
         form.add(label("Teléfono"), c);
-        c.gridx = 3;
+        c.gridx = 3; c.weightx = 1;
         styleField(txtTelefono);
         form.add(txtTelefono, c);
 
-        c.gridx = 0; c.gridy = 1;
+        c.gridx = 0; c.gridy = 1; c.weightx = 0;
         form.add(label("Rubro"), c);
-        c.gridx = 1;
+        c.gridx = 1; c.weightx = 1;
         comboRubro.setFont(UiTheme.BODY);
         comboRubro.setPreferredSize(new Dimension(180, 34));
+        comboRubro.setLightWeightPopupEnabled(false);
         form.add(comboRubro, c);
 
-        c.gridx = 2;
+        c.gridx = 2; c.weightx = 0;
         form.add(label("Nota"), c);
-        c.gridx = 3;
+        c.gridx = 3; c.weightx = 1;
         styleField(txtNota);
         form.add(txtNota, c);
 
@@ -129,7 +129,7 @@ public class ProveedoresDialog extends JDialog {
         actions.add(btnBorrar);
         actions.add(btnCerrar);
 
-        c.gridx = 0; c.gridy = 2; c.gridwidth = 4;
+        c.gridx = 0; c.gridy = 2; c.gridwidth = 4; c.weightx = 0; c.fill = GridBagConstraints.NONE;
         form.add(actions, c);
         return form;
     }
@@ -171,6 +171,7 @@ public class ProveedoresDialog extends JDialog {
     }
 
     private void guardarNuevo() {
+        comboRubro.hidePopup();
         String nombre = txtNombre.getText().trim();
         if (nombre.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Ingresá el nombre del proveedor.");
@@ -194,6 +195,7 @@ public class ProveedoresDialog extends JDialog {
     }
 
     private void actualizar() {
+        comboRubro.hidePopup();
         int row = table.getSelectedRow();
         if (row < 0) {
             JOptionPane.showMessageDialog(this, "Seleccioná un proveedor.");
@@ -271,7 +273,8 @@ public class ProveedoresDialog extends JDialog {
         f.setBackground(UiTheme.SURFACE_ALT);
         f.setForeground(UiTheme.INK);
         f.setCaretColor(UiTheme.ACCENT);
-        f.setPreferredSize(new Dimension(10, 34));
+        f.setPreferredSize(new Dimension(160, 34));
+        f.setMinimumSize(new Dimension(120, 34));
     }
 
     private static JButton primaryButton(String text) {

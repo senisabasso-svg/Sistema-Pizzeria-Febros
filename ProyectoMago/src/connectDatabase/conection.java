@@ -75,7 +75,8 @@ public class conection {
                 + "nombre TEXT NOT NULL, "
                 + "precio REAL NOT NULL, "
                 + "costo REAL DEFAULT 0, "
-                + "tipo TEXT DEFAULT 'Otro'"
+                + "tipo TEXT DEFAULT 'Otro', "
+                + "sku TEXT DEFAULT ''"
                 + ");";
 
         String informes = "CREATE TABLE IF NOT EXISTS informes ("
@@ -94,7 +95,8 @@ public class conection {
                 + "monto_contado REAL, "
                 + "diferencia REAL, "
                 + "estado TEXT NOT NULL DEFAULT 'ABIERTA', "
-                + "nota TEXT"
+                + "nota TEXT, "
+                + "vendedor TEXT DEFAULT ''"
                 + ");";
 
         String movimientos = "CREATE TABLE IF NOT EXISTS movimientos_caja ("
@@ -113,7 +115,7 @@ public class conection {
                 + "unidad TEXT DEFAULT 'u', "
                 + "costo_unitario REAL DEFAULT 0, "
                 + "minimo REAL DEFAULT 0, "
-                + "categoria TEXT DEFAULT 'Ingrediente', "
+                + "categoria TEXT DEFAULT 'Mercadería', "
                 + "proveedor_id INTEGER"
                 + ");";
 
@@ -157,6 +159,11 @@ public class conection {
                 + "unidad TEXT DEFAULT 'u'"
                 + ");";
 
+        String vendedores = "CREATE TABLE IF NOT EXISTS vendedores ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "nombre TEXT NOT NULL"
+                + ");";
+
         String mermas = "CREATE TABLE IF NOT EXISTS mermas ("
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "fecha TEXT NOT NULL, "
@@ -178,9 +185,18 @@ public class conection {
             stmt.execute(compras);
             stmt.execute(compraDetalle);
             stmt.execute(mermas);
+            stmt.execute(vendedores);
+            ensureColumn(stmt, "cajas", "vendedor", "TEXT DEFAULT ''");
             ensureColumn(stmt, "menuPrecios", "costo", "REAL DEFAULT 0");
             ensureColumn(stmt, "menuPrecios", "tipo", "TEXT DEFAULT 'Otro'");
-            ensureColumn(stmt, "stock", "categoria", "TEXT DEFAULT 'Ingrediente'");
+            ensureColumn(stmt, "menuPrecios", "sku", "TEXT DEFAULT ''");
+            try {
+                stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_menu_sku "
+                        + "ON menuPrecios(sku) WHERE sku IS NOT NULL AND trim(sku) <> ''");
+            } catch (SQLException ignored) {
+                // Si ya hay códigos repetidos, el alta igual rechaza el duplicado.
+            }
+            ensureColumn(stmt, "stock", "categoria", "TEXT DEFAULT 'Mercadería'");
             ensureColumn(stmt, "stock", "proveedor_id", "INTEGER");
         } catch (SQLException e) {
             System.out.println("Error al verificar tablas: " + e.getMessage());

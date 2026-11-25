@@ -20,23 +20,18 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
- * Configuración del comercio: marca, impresora y activación remota (URL / id / key).
+ * Configuración del comercio: nombre, logo e impresora.
  */
 public class ConfiguracionDialog extends JDialog {
 
     private final ComercioConfig config = ComercioConfig.get();
     private final JTextField txtNombre = new JTextField(24);
     private final JComboBox<String> comboImpresora = new JComboBox<>();
-    private final JTextField txtApiUrl = new JTextField(28);
-    private final JTextField txtIdCliente = new JTextField(28);
-    private final JPasswordField txtAccessKey = new JPasswordField(28);
-    private final JLabel lblLicencia = new JLabel(" ");
     private final JLabel lblPreview = new JLabel();
     private final JLabel lblLogoPath = new JLabel("Sin logo");
     private File logoSeleccionado;
@@ -46,7 +41,7 @@ public class ConfiguracionDialog extends JDialog {
         super(owner, "Configuración comercio", true);
         this.onSaved = onSaved;
 
-        setSize(620, 640);
+        setSize(620, 560);
         setLocationRelativeTo(owner);
         getContentPane().setBackground(UiTheme.BG);
         setLayout(new BorderLayout(12, 12));
@@ -125,47 +120,16 @@ public class ConfiguracionDialog extends JDialog {
         form.add(btnRefresh, c);
 
         c.gridy = y++;
-        form.add(section("Activación / licencia remota"), c);
-
+        form.add(section("Vendedores"), c);
         c.gridy = y++;
-        form.add(label("URL de la API (ej: https://tudominio.com)"), c);
+        JLabel tipVendedores = new JLabel("Se eligen al abrir la caja. Para crearlos o quitarlos hace falta el PIN de administrador.");
+        tipVendedores.setFont(UiTheme.SMALL);
+        tipVendedores.setForeground(UiTheme.MUTED);
+        form.add(tipVendedores, c);
+        JButton btnVendedores = secondaryButton("Administrar vendedores");
+        btnVendedores.addActionListener(e -> abrirVendedores());
         c.gridy = y++;
-        styleField(txtApiUrl);
-        form.add(txtApiUrl, c);
-
-        c.gridy = y++;
-        form.add(label("idCliente (UUID)"), c);
-        c.gridy = y++;
-        styleField(txtIdCliente);
-        form.add(txtIdCliente, c);
-
-        c.gridy = y++;
-        form.add(label("AccessKey"), c);
-        c.gridy = y++;
-        stylePassword(txtAccessKey);
-        form.add(txtAccessKey, c);
-
-        JPanel licenseActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        licenseActions.setOpaque(false);
-        JButton btnValidar = secondaryButton("Validar estado ahora");
-        btnValidar.addActionListener(e -> validarAhora());
-        licenseActions.add(btnValidar);
-        c.gridy = y++;
-        form.add(licenseActions, c);
-
-        lblLicencia.setFont(UiTheme.SMALL);
-        lblLicencia.setForeground(UiTheme.MUTED);
-        c.gridy = y++;
-        form.add(lblLicencia, c);
-
-        JLabel tip = new JLabel("<html>Si la API responde <b>activo</b>, el sistema puede usarse "
-                + ComercioConfig.DIAS_CACHE_LICENCIA
-                + " días sin internet.<br>"
-                + "Si lo pasás a <b>inactivo</b> en el servidor, al vencer la caché deja de abrir.</html>");
-        tip.setFont(UiTheme.SMALL);
-        tip.setForeground(UiTheme.MUTED);
-        c.gridy = y++;
-        form.add(tip, c);
+        form.add(btnVendedores, c);
 
         return form;
     }
@@ -182,45 +146,20 @@ public class ConfiguracionDialog extends JDialog {
         return actions;
     }
 
+    private void abrirVendedores() {
+        if (!AdminPin.pedir(this)) {
+            return;
+        }
+        JFrame owner = getOwner() instanceof JFrame ? (JFrame) getOwner() : null;
+        new VendedoresDialog(owner).setVisible(true);
+    }
+
     private void cargarDatos() {
         txtNombre.setText(config.getNombreComercio());
-        txtApiUrl.setText(config.getApiUrl());
-        txtIdCliente.setText(config.getIdCliente());
-        txtAccessKey.setText(config.getAccessKey());
         cargarImpresoras(config.getImpresora());
         File logo = config.resolveLogoFile();
         logoSeleccionado = logo;
         mostrarPreview(logo);
-        actualizarLabelLicencia();
-    }
-
-    private void actualizarLabelLicencia() {
-        if (config.licenciaCacheVigente()) {
-            long horas = Math.max(1, config.millisRestantesCache() / (60L * 60L * 1000L));
-            lblLicencia.setText("Estado local: activo (caché ~" + horas + " h restantes)");
-            lblLicencia.setForeground(UiTheme.SUCCESS);
-        } else if ("inactivo".equalsIgnoreCase(config.getLastStatus())) {
-            lblLicencia.setText("Último estado conocido: inactivo");
-            lblLicencia.setForeground(UiTheme.ACCENT);
-        } else if (!config.tieneCredencialesLicencia()) {
-            lblLicencia.setText("Sin credenciales de activación cargadas");
-            lblLicencia.setForeground(UiTheme.MUTED);
-        } else {
-            lblLicencia.setText("Caché vencida o sin validar — hace falta internet");
-            lblLicencia.setForeground(UiTheme.MUTED);
-        }
-    }
-
-    private void validarAhora() {
-        // Guardar temporalmente los campos de licencia en memoria para la prueba.
-        config.setApiUrl(txtApiUrl.getText());
-        config.setIdCliente(txtIdCliente.getText());
-        config.setAccessKey(new String(txtAccessKey.getPassword()));
-
-        LocalSystemLicense.Result result = LocalSystemLicense.validateNow();
-        actualizarLabelLicencia();
-        int type = result.allowed() ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE;
-        JOptionPane.showMessageDialog(this, result.message, "Validación de estado", type);
     }
 
     private void cargarImpresoras(String selected) {
@@ -283,9 +222,6 @@ public class ConfiguracionDialog extends JDialog {
 
         try {
             config.setNombreComercio(nombre);
-            config.setApiUrl(txtApiUrl.getText());
-            config.setIdCliente(txtIdCliente.getText());
-            config.setAccessKey(new String(txtAccessKey.getPassword()));
 
             Object printerItem = comboImpresora.getSelectedItem();
             if (printerItem == null || "(Automática)".equals(printerItem.toString())) {
@@ -308,21 +244,7 @@ public class ConfiguracionDialog extends JDialog {
             }
 
             config.save();
-
-            // Si hay credenciales, intenta validar al guardar (si hay red).
-            if (config.tieneCredencialesLicencia() && !config.licenciaCacheVigente()) {
-                LocalSystemLicense.Result result = LocalSystemLicense.validateNow();
-                actualizarLabelLicencia();
-                if (!result.allowed()) {
-                    JOptionPane.showMessageDialog(this,
-                            "Configuración guardada, pero la licencia no quedó activa:\n" + result.message,
-                            "Aviso", JOptionPane.WARNING_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Configuración guardada.\n" + result.message);
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Configuración guardada.");
-            }
+            JOptionPane.showMessageDialog(this, "Configuración guardada.");
 
             if (onSaved != null) {
                 onSaved.run();
@@ -350,15 +272,6 @@ public class ConfiguracionDialog extends JDialog {
     }
 
     private static void styleField(JTextField f) {
-        f.setFont(UiTheme.BODY);
-        f.setBorder(UiTheme.fieldBorder());
-        f.setBackground(UiTheme.SURFACE_ALT);
-        f.setForeground(UiTheme.INK);
-        f.setCaretColor(UiTheme.ACCENT);
-        f.setPreferredSize(new Dimension(10, 34));
-    }
-
-    private static void stylePassword(JPasswordField f) {
         f.setFont(UiTheme.BODY);
         f.setBorder(UiTheme.fieldBorder());
         f.setBackground(UiTheme.SURFACE_ALT);
