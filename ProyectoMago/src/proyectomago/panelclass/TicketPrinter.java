@@ -1,10 +1,14 @@
 package proyectomago.panelclass;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.List;
 import javax.imageio.ImageIO;
@@ -23,6 +27,10 @@ public final class TicketPrinter {
     private static final Charset CHARSET = Charset.forName("UTF-8");
     /** Ancho útil típico de térmica 80 mm (puntos). */
     private static final int PAPER_WIDTH_DOTS = 576;
+    /** Pie fijo FEBROS (soldado en el ticket). */
+    private static final String FEBROS_FOOTER_TEXT = "sistema de https://febrospuntodeventa.com/";
+    private static final String FEBROS_MARK_RESOURCE = "/proyectomago/resources/febros_mark.png";
+    private static final String FEBROS_MARK_FILE = "febros_mark.png";
 
     private TicketPrinter() {
     }
@@ -68,20 +76,24 @@ public final class TicketPrinter {
         String hora = String.format("%02d:%02d:%02d",
                 now.getHour(), now.getMinute(), now.getSecond());
 
+        /*
+         * Layout pensado para térmica 80 mm (~42 caracteres):
+         * nombre pegado al logo → meta → tabla con columnas equilibradas → total con peso → gracias.
+         * (El pie largo / promo se hace en un paso siguiente.)
+         */
         StringBuilder sb = new StringBuilder();
-        // Cabecera (el logo ya va arriba por ESC/POS si está activo)
         sb.append(center(nombre)).append("\n");
-        sb.append(dashed()).append("\n");
+        sb.append("\n");
         sb.append("Fecha: ").append(fecha).append("\n");
         sb.append("Hora:  ").append(hora).append("\n");
         if (clienteNombre != null && !clienteNombre.isBlank()) {
             sb.append("Cliente: ").append(fit(clienteNombre.trim(), W - 9)).append("\n");
         }
         if (celular != null && !celular.isBlank()) {
-            sb.append("Cel: ").append(celular.trim()).append("\n");
+            sb.append("Cel: ").append(fit(celular.trim(), W - 5)).append("\n");
         }
         if (documento != null && !documento.isBlank()) {
-            sb.append("Doc: ").append(documento.trim()).append("\n");
+            sb.append("Doc: ").append(fit(documento.trim(), W - 5)).append("\n");
         }
         if (direccion != null && !direccion.isBlank()) {
             sb.append("Dir: ").append(fit(direccion.trim(), W - 5)).append("\n");
@@ -89,8 +101,7 @@ public final class TicketPrinter {
         if (notaCliente != null && !notaCliente.isBlank()) {
             sb.append("Nota: ").append(fit(notaCliente.trim(), W - 6)).append("\n");
         }
-
-        // Tabla de ítems
+        sb.append("\n");
         sb.append(dashed()).append("\n");
         sb.append(colHeader()).append("\n");
         sb.append(dashed()).append("\n");
@@ -102,11 +113,12 @@ public final class TicketPrinter {
             }
         }
         sb.append(dashed()).append("\n");
-        sb.append(padLeft("TOTAL $ " + money(total), W)).append("\n");
-        sb.append(dashed()).append("\n");
-        // Pie mínimo por ahora (luego lo mejoramos)
-        sb.append(center("Gracias por su compra")).append("\n");
-        sb.append("\n\n\n");
+        sb.append(totalLine(total)).append("\n");
+        sb.append("\n");
+        sb.append(center("Muchas gracias por su visita")).append("\n");
+        sb.append("\n");
+        sb.append(FEBROS_FOOTER_TEXT).append("\n");
+        sb.append("\n");
         return sb.toString();
     }
 
@@ -142,14 +154,17 @@ public final class TicketPrinter {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             for (int i = 1; i <= copies; i++) {
                 if (logoBytes.length > 0) {
+                    // El raster del logo ya termina con salto; no agregar otro (evita el hueco enorme).
                     out.write(logoBytes);
                 }
-                // Sin banner "TICKET N" cuando es una sola copia (más limpio)
                 if (copies > 1) {
                     out.write(("---------- TICKET " + i + " ----------\n").getBytes(CHARSET));
                 }
-                out.write(ticketBody.getBytes(CHARSET));
-                out.write("\n\n".getBytes(CHARSET));
+                writeTicketBodyEscPos(out, ticketBody);
+                out.write(buildFebrosFooterEscPos());
+                // La cuchilla está más abajo que el cabezal: hay que alimentar
+                // varias líneas o el pie FEBROS queda cortado / no se ve.
+                out.write(new byte[]{0x1B, 'd', 6}); // ESC d n — avanzar n líneas
                 out.write(cut);
             }
 
@@ -161,6 +176,143 @@ public final class TicketPrinter {
         } catch (Exception e) {
             return new PrintResult(false, "Error al imprimir: " + e.getMessage(), ticketBody);
         }
+    }
+
+    /**
+     * Pie fijo: isotipo FEBROS chico a la izquierda + texto del sistema a la derecha.
+     * Va siempre (no depende de configuración).
+     */
+    private static byte[] buildFebrosFooterEscPos() {
+        try {
+            BufferedImage mark = loadFebrosMark();
+            if (mark == null) {
+                // Fallback solo texto
+                ByteArrayOutputStream fallback = new ByteArrayOutputStream();
+                fallback.write(new byte[]{0x1B, 'a', 0});
+                fallback.write('\n');
+                fallback.write(FEBROS_FOOTER_TEXT.getBytes(CHARSET));
+                fallback.write('\n');
+                return fallback.toByteArray();
+            }
+
+            // Solo el icono (lado izquierdo del wordmark), fondo negro → blanco, naranja → negro.
+            BufferedImage icon = extractFebrosIcon(mark);
+            int iconH = 48;
+            int iconW = Math.max(8, (int) Math.round(icon.getWidth() * (iconH / (double) icon.getHeight())));
+            iconW = (iconW + 7) / 8 * 8;
+
+            BufferedImage iconMono = new BufferedImage(iconW, iconH, BufferedImage.TYPE_BYTE_BINARY);
+            Graphics2D gi = iconMono.createGraphics();
+            gi.setColor(Color.WHITE);
+            gi.fillRect(0, 0, iconW, iconH);
+            gi.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            gi.drawImage(toPrintableMark(icon), 0, 0, iconW, iconH, null);
+            gi.dispose();
+
+            Font font = new Font(Font.SANS_SERIF, Font.PLAIN, 18);
+            BufferedImage probe = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+            Graphics2D gp = probe.createGraphics();
+            gp.setFont(font);
+            FontMetrics fm = gp.getFontMetrics();
+            int textW = fm.stringWidth(FEBROS_FOOTER_TEXT);
+            int textH = fm.getAscent() + fm.getDescent();
+            gp.dispose();
+
+            int gap = 10;
+            int stripH = Math.max(iconH, textH) + 6;
+            int stripW = Math.min(PAPER_WIDTH_DOTS, iconW + gap + textW + 8);
+            stripW = Math.max(iconW + gap + 8, (stripW + 7) / 8 * 8);
+
+            BufferedImage strip = new BufferedImage(stripW, stripH, BufferedImage.TYPE_BYTE_BINARY);
+            Graphics2D g = strip.createGraphics();
+            g.setColor(Color.WHITE);
+            g.fillRect(0, 0, stripW, stripH);
+            g.drawImage(iconMono, 0, (stripH - iconH) / 2, null);
+            g.setColor(Color.BLACK);
+            g.setFont(font);
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+            int tx = iconW + gap;
+            int ty = (stripH + fm.getAscent() - fm.getDescent()) / 2;
+            // Si no entra en una línea, partir en dos
+            if (tx + textW > stripW - 4) {
+                String line1 = "sistema de";
+                String line2 = "https://febrospuntodeventa.com/";
+                g.drawString(line1, tx, stripH / 2 - 2);
+                g.drawString(line2, tx, stripH / 2 + fm.getAscent());
+            } else {
+                g.drawString(FEBROS_FOOTER_TEXT, tx, ty);
+            }
+            g.dispose();
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            out.write('\n');
+            out.write(new byte[]{0x1B, 'a', 0});
+            out.write(encodeGsV0(strip));
+            out.write('\n');
+            return out.toByteArray();
+        } catch (Exception e) {
+            System.out.println("No se pudo armar pie FEBROS: " + e.getMessage());
+            try {
+                ByteArrayOutputStream fallback = new ByteArrayOutputStream();
+                fallback.write('\n');
+                fallback.write(FEBROS_FOOTER_TEXT.getBytes(CHARSET));
+                fallback.write('\n');
+                return fallback.toByteArray();
+            } catch (Exception ignored) {
+                return new byte[0];
+            }
+        }
+    }
+
+    private static BufferedImage loadFebrosMark() {
+        try (InputStream in = TicketPrinter.class.getResourceAsStream(FEBROS_MARK_RESOURCE)) {
+            if (in != null) {
+                BufferedImage img = ImageIO.read(in);
+                if (img != null) {
+                    return img;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            File local = new File(ComercioConfig.get().getConfigDir(), FEBROS_MARK_FILE);
+            if (local.exists()) {
+                return ImageIO.read(local);
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    /** Recorta la zona del icono (izquierda del wordmark). */
+    private static BufferedImage extractFebrosIcon(BufferedImage mark) {
+        int w = mark.getWidth();
+        int h = mark.getHeight();
+        // El icono ocupa aprox. el primer tercio / cuadrado izquierdo
+        int side = Math.min(h, Math.max(1, w / 3));
+        side = Math.min(side, w);
+        return mark.getSubimage(0, 0, side, h);
+    }
+
+    /** Fondo oscuro → blanco; naranja/claro → negro (imprimible en térmica). */
+    private static BufferedImage toPrintableMark(BufferedImage src) {
+        int w = src.getWidth();
+        int h = src.getHeight();
+        BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int rgb = src.getRGB(x, y);
+                int a = (rgb >> 24) & 0xFF;
+                int r = (rgb >> 16) & 0xFF;
+                int gr = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+                int lum = (r * 30 + gr * 59 + b * 11) / 100;
+                // En el mark: negro=fondo, naranja/blanco=figura
+                boolean ink = a > 20 && lum > 40;
+                out.setRGB(x, y, ink ? 0x000000 : 0xFFFFFF);
+            }
+        }
+        return out;
     }
 
     /**
@@ -194,18 +346,92 @@ public final class TicketPrinter {
                 maxH = Math.max(maxH, 420);
             }
             BufferedImage mono = toMonoRaster(src, maxW, maxH);
+            // Recorta márgenes blancos; keepPad deja un respiro chico debajo del dibujo.
+            mono = trimWhiteMargins(mono, 4);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            // Centrar
-            out.write(new byte[]{0x1B, 'a', 1});
+            out.write(new byte[]{0x1B, 'a', 1}); // centrar
             out.write(encodeGsV0(mono));
+            // Un solo salto: punto medio entre “muy separado” y “pegado”.
             out.write('\n');
-            // Volver a alineación izquierda para el texto
-            out.write(new byte[]{0x1B, 'a', 0});
+            out.write(new byte[]{0x1B, 'a', 0}); // izquierda para el texto
             return out.toByteArray();
         } catch (Exception e) {
             System.out.println("No se pudo preparar logo para ticket: " + e.getMessage());
             return new byte[0];
         }
+    }
+
+    /**
+     * Elimina filas/columnas casi blancas alrededor del logo para que no “empuje”
+     * el nombre del local hacia abajo.
+     */
+    private static BufferedImage trimWhiteMargins(BufferedImage mono, int keepPad) {
+        int w = mono.getWidth();
+        int h = mono.getHeight();
+        int top = 0;
+        int bottom = h - 1;
+        int left = 0;
+        int right = w - 1;
+
+        while (top < h && rowIsWhite(mono, top)) {
+            top++;
+        }
+        while (bottom > top && rowIsWhite(mono, bottom)) {
+            bottom--;
+        }
+        while (left < w && colIsWhite(mono, left, top, bottom)) {
+            left++;
+        }
+        while (right > left && colIsWhite(mono, right, top, bottom)) {
+            right--;
+        }
+        if (top >= bottom || left >= right) {
+            return mono;
+        }
+
+        top = Math.max(0, top - keepPad);
+        left = Math.max(0, left - keepPad);
+        bottom = Math.min(h - 1, bottom + keepPad);
+        right = Math.min(w - 1, right + keepPad);
+
+        int nw = right - left + 1;
+        // Ancho múltiplo de 8 para ESC/POS
+        nw = (nw + 7) / 8 * 8;
+        if (left + nw > w) {
+            left = Math.max(0, w - nw);
+            nw = Math.min(nw, w - left);
+            nw = nw / 8 * 8;
+            if (nw <= 0) {
+                return mono;
+            }
+        }
+        int nh = bottom - top + 1;
+        BufferedImage cropped = new BufferedImage(nw, nh, BufferedImage.TYPE_BYTE_BINARY);
+        Graphics2D g = cropped.createGraphics();
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, nw, nh);
+        g.drawImage(mono, 0, 0, nw, nh, left, top, left + nw, top + nh, null);
+        g.dispose();
+        return cropped;
+    }
+
+    private static boolean rowIsWhite(BufferedImage img, int y) {
+        int w = img.getWidth();
+        for (int x = 0; x < w; x++) {
+            if ((img.getRGB(x, y) & 0xFFFFFF) == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean colIsWhite(BufferedImage img, int x, int y0, int y1) {
+        for (int y = y0; y <= y1; y++) {
+            if ((img.getRGB(x, y) & 0xFFFFFF) == 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static BufferedImage toMonoRaster(BufferedImage src, int maxW, int maxH) {
@@ -283,41 +509,94 @@ public final class TicketPrinter {
         return cmd.toByteArray();
     }
 
-    private static final int W = 32;
+    /**
+     * Ancho de texto para POS-80 (~80 mm). Con 32 el ticket se veía “chico y apretado”
+     * al lado del logo; 42 equilibra nombre completo + columnas legibles.
+     */
+    private static final int W = 42;
+    // 20 + 6 + 8 + 8 = 42  → Articulo amplio, números con aire entre sí
+    private static final int COL_ART = 20;
+    private static final int COL_CANT = 6;
+    private static final int COL_PREC = 8;
+    private static final int COL_IMP = 8;
+
+    /**
+     * Nombre centrado+negrita; TOTAL en negrita + doble altura (jerarquía real en térmica).
+     */
+    private static void writeTicketBodyEscPos(ByteArrayOutputStream out, String ticketBody) throws Exception {
+        byte[] boldOn = new byte[]{0x1B, 'E', 1};
+        byte[] boldOff = new byte[]{0x1B, 'E', 0};
+        byte[] alignCenter = new byte[]{0x1B, 'a', 1};
+        byte[] alignLeft = new byte[]{0x1B, 'a', 0};
+        // GS ! n — bit 4 = doble altura (no ensancha, no rompe columnas)
+        byte[] doubleHOn = new byte[]{0x1D, '!', 0x10};
+        byte[] doubleHOff = new byte[]{0x1D, '!', 0x00};
+
+        String[] lines = ticketBody.split("\n", -1);
+        boolean firstTextLine = true;
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (firstTextLine && !trimmed.isEmpty()) {
+                out.write(alignCenter);
+                out.write(boldOn);
+                out.write(trimmed.getBytes(CHARSET));
+                out.write('\n');
+                out.write(boldOff);
+                out.write(alignLeft);
+                firstTextLine = false;
+                continue;
+            }
+            firstTextLine = false;
+            // El pie FEBROS se imprime después como icono+texto (evitar duplicar la línea).
+            if (trimmed.equals(FEBROS_FOOTER_TEXT)) {
+                continue;
+            }
+            if (trimmed.startsWith("TOTAL")) {
+                out.write(boldOn);
+                out.write(doubleHOn);
+                out.write(line.getBytes(CHARSET));
+                out.write('\n');
+                out.write(doubleHOff);
+                out.write(boldOff);
+            } else {
+                out.write(line.getBytes(CHARSET));
+                out.write('\n');
+            }
+        }
+    }
 
     private static String dashed() {
         return "-".repeat(W);
     }
 
     private static String colHeader() {
-        // Articulo(14) Cant(4) Prec(6) Imp(7) + 1 espacio entre = 32
-        return padRight("Articulo", 14)
-                + padLeft("Cant", 4)
-                + padLeft("Prec", 6)
-                + padLeft("Imp", 7);
+        return padRight("Articulo", COL_ART)
+                + padLeft("Cant", COL_CANT)
+                + padLeft("Prec", COL_PREC)
+                + padLeft("Import", COL_IMP);
+    }
+
+    private static String totalLine(double total) {
+        String label = "TOTAL $:";
+        String amount = money(total);
+        int gap = Math.max(1, W - label.length() - amount.length());
+        return label + " ".repeat(gap) + amount;
     }
 
     private static String formatItemLines(Pedido p) {
         StringBuilder lines = new StringBuilder();
         String name = p.getNombreProd() == null ? "" : p.getNombreProd().trim();
-        String cant = String.valueOf(p.getCantidad());
+        String cant = String.format(java.util.Locale.US, "%.2f", (double) p.getCantidad());
         String prec = money(p.getPrecioUnitario());
         String imp = money(p.getSubtotal());
+        String nums = padLeft(cant, COL_CANT) + padLeft(prec, COL_PREC) + padLeft(imp, COL_IMP);
 
-        if (name.length() <= 14) {
-            lines.append(padRight(name, 14))
-                    .append(padLeft(cant, 4))
-                    .append(padLeft(prec, 6))
-                    .append(padLeft(imp, 7))
-                    .append("\n");
+        if (name.length() <= COL_ART) {
+            lines.append(padRight(name, COL_ART)).append(nums).append("\n");
         } else {
-            // Nombre completo en una línea; cantidades alineadas debajo
-            lines.append(wrapLeft(name, W)).append("\n");
-            lines.append(padRight("", 14))
-                    .append(padLeft(cant, 4))
-                    .append(padLeft(prec, 6))
-                    .append(padLeft(imp, 7))
-                    .append("\n");
+            // Nombre largo: línea propia; cifras alineadas debajo (legible, sin cortar feo)
+            lines.append(fit(name, W)).append("\n");
+            lines.append(padRight("", COL_ART)).append(nums).append("\n");
         }
 
         String nota = p.getNota();
@@ -328,10 +607,7 @@ public final class TicketPrinter {
     }
 
     private static String money(double v) {
-        if (Math.abs(v - Math.rint(v)) < 0.001) {
-            return String.format("%.0f", v);
-        }
-        return String.format("%.2f", v);
+        return String.format(java.util.Locale.US, "%.2f", v);
     }
 
     private static String center(String text) {
@@ -372,10 +648,7 @@ public final class TicketPrinter {
         if (text.length() <= width) {
             return text;
         }
-        if (width <= 1) {
-            return text.substring(0, width);
-        }
-        return text.substring(0, width - 1) + ".";
+        return text.substring(0, width);
     }
 
     private static String wrapLeft(String text, int width) {
