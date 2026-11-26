@@ -34,7 +34,7 @@ public final class ComercioConfig {
 
     private static final String DEFAULT_NOMBRE = "GARAJE GOURMET";
     /** Días que puede usarse offline tras una validación "activo". */
-    public static final int DIAS_CACHE_LICENCIA = 2;
+    public static final int DIAS_CACHE_LICENCIA = 7;
 
     private static ComercioConfig instance;
 

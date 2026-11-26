@@ -208,50 +208,16 @@ public class CajaDialog extends JDialog {
     }
 
     private void actualizarResumen() {
-        double entradas = sumarMovimientos("ENTRADA");
-        double salidas = sumarMovimientos("SALIDA");
-        double ventas = ventasDelDia();
-        double esperado = montoApertura + ventas + entradas - salidas;
+        double entradas = CajaService.sumMovimientos(cajaIdAbierta, "ENTRADA");
+        double salidas = CajaService.sumMovimientos(cajaIdAbierta, "SALIDA");
+        double ventas = CajaService.sumVentasDesde(fechaApertura);
+        double esperado = CajaService.round2(montoApertura + ventas + entradas - salidas);
 
         lblEstado.setText("Caja abierta · #" + cajaIdAbierta);
         lblEstado.setForeground(UiTheme.SUCCESS);
         lblResumen.setText(String.format(
                 "Apertura $%.0f  ·  Ventas $%.0f  ·  Entradas $%.0f  ·  Salidas $%.0f  ·  Esperado en caja $%.0f",
                 montoApertura, ventas, entradas, salidas, esperado));
-    }
-
-    private double sumarMovimientos(String tipo) {
-        if (cajaIdAbierta == null) {
-            return 0;
-        }
-        String sql = "SELECT COALESCE(SUM(monto), 0) FROM movimientos_caja WHERE caja_id = ? AND tipo = ?";
-        try (Connection connection = new conection().getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, cajaIdAbierta);
-            ps.setString(2, tipo);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getDouble(1) : 0;
-            }
-        } catch (SQLException e) {
-            return 0;
-        }
-    }
-
-    private double ventasDelDia() {
-        String dia = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-        if (fechaApertura != null && fechaApertura.length() >= 10) {
-            dia = fechaApertura.substring(0, 10);
-        }
-        String sql = "SELECT COALESCE(SUM(total), 0) FROM informes WHERE DATE(fecha) = ?";
-        try (Connection connection = new conection().getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, dia);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getDouble(1) : 0;
-            }
-        } catch (SQLException e) {
-            return 0;
-        }
     }
 
     private void abrirCaja() {
@@ -266,8 +232,8 @@ public class CajaDialog extends JDialog {
             return;
         }
         Double monto = parseMonto(montoTxt.trim());
-        if (monto == null) {
-            JOptionPane.showMessageDialog(this, "Ingresá un monto válido.");
+        if (monto == null || monto < 0) {
+            JOptionPane.showMessageDialog(this, "Ingresá un monto válido (0 o más).");
             return;
         }
 
@@ -292,28 +258,50 @@ public class CajaDialog extends JDialog {
             return;
         }
 
-        double entradas = sumarMovimientos("ENTRADA");
-        double salidas = sumarMovimientos("SALIDA");
-        double ventas = ventasDelDia();
-        double esperado = montoApertura + ventas + entradas - salidas;
+        double entradas = CajaService.sumMovimientos(cajaIdAbierta, "ENTRADA");
+        double salidas = CajaService.sumMovimientos(cajaIdAbierta, "SALIDA");
+        double ventas = CajaService.sumVentasDesde(fechaApertura);
+        double esperado = CajaService.round2(montoApertura + ventas + entradas - salidas);
 
         String contadoTxt = JOptionPane.showInputDialog(this,
-                "Esperado en caja: $" + String.format("%.0f", esperado)
+                "Resumen del turno\n"
+                        + "Apertura: $" + String.format("%.0f", montoApertura) + "\n"
+                        + "Ventas: $" + String.format("%.0f", ventas) + "\n"
+                        + "Entradas: $" + String.format("%.0f", entradas) + "\n"
+                        + "Salidas: $" + String.format("%.0f", salidas) + "\n"
+                        + "────────────────\n"
+                        + "Esperado en caja: $" + String.format("%.0f", esperado)
                         + "\n\n¿Cuánto contaste en efectivo?",
                 String.format("%.0f", esperado));
         if (contadoTxt == null) {
             return;
         }
         Double contado = parseMonto(contadoTxt.trim());
-        if (contado == null) {
-            JOptionPane.showMessageDialog(this, "Ingresá un monto contado válido.");
+        if (contado == null || contado < 0) {
+            JOptionPane.showMessageDialog(this, "Ingresá un monto contado válido (0 o más).");
             return;
         }
 
-        double diferencia = contado - esperado;
+        double diferencia = CajaService.round2(contado - esperado);
+        if (!CajaService.montosCierran(contado, esperado)) {
+            int forzar = JOptionPane.showConfirmDialog(this,
+                    "La caja NO cierra.\n"
+                            + "Esperado: $" + String.format("%.0f", esperado) + "\n"
+                            + "Contado: $" + String.format("%.0f", contado) + "\n"
+                            + "Diferencia: $" + String.format("%.0f", diferencia)
+                            + "\n\nRecontá el efectivo.\n"
+                            + "¿Forzar el cierre igual con esta diferencia?",
+                    "Caja no cierra",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (forzar != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
         String ahora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
         String sql = "UPDATE cajas SET fecha_cierre = ?, monto_esperado = ?, monto_contado = ?, "
-                + "diferencia = ?, estado = 'CERRADA' WHERE id = ?";
+                + "diferencia = ?, estado = 'CERRADA' WHERE id = ? AND estado = 'ABIERTA'";
         try (Connection connection = new conection().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, ahora);
@@ -321,7 +309,12 @@ public class CajaDialog extends JDialog {
             ps.setDouble(3, contado);
             ps.setDouble(4, diferencia);
             ps.setInt(5, cajaIdAbierta);
-            ps.executeUpdate();
+            int n = ps.executeUpdate();
+            if (n == 0) {
+                JOptionPane.showMessageDialog(this, "La caja ya no estaba abierta. Refrescá e intentá de nuevo.");
+                refrescar();
+                return;
+            }
 
             String msg = "Caja cerrada.\n"
                     + "Esperado: $" + String.format("%.0f", esperado) + "\n"

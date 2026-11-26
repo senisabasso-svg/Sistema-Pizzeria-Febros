@@ -63,6 +63,8 @@ public class PrincipalPanel extends JPanel {
     private String precioSeleccionado = "0";
     private String nombreSeleccionado = "";
     private final ActionListener productoListener = e -> cargarPrecioProducto();
+    /** Evita doble cobro por clicks rápidos. */
+    private boolean cobrando = false;
 
     public PrincipalPanel() {
         setBackground(UiTheme.BG);
@@ -339,13 +341,28 @@ public class PrincipalPanel extends JPanel {
             return;
         }
 
-        String precioTxt = txtPrecioUnitario.getText().trim();
+        try {
+            spinCantidad.commitEdit();
+        } catch (Exception ignored) {
+            // Se mantiene el valor anterior del modelo.
+        }
+
+        String precioTxt = txtPrecioUnitario.getText().trim().replace(",", ".").replace("$", "");
         if (!precioTxt.matches("\\d+(\\.\\d+)?")) {
             JOptionPane.showMessageDialog(this, "El precio unitario debe ser un número válido.");
             return;
         }
+        double precioNum = Double.parseDouble(precioTxt);
+        if (precioNum <= 0) {
+            JOptionPane.showMessageDialog(this, "El precio unitario debe ser mayor a 0.");
+            return;
+        }
 
         int cantidad = (Integer) spinCantidad.getValue();
+        if (cantidad < 1) {
+            JOptionPane.showMessageDialog(this, "La cantidad debe ser al menos 1.");
+            return;
+        }
         String nota = String.valueOf(comboNota.getSelectedItem());
         Pedido pedido = new Pedido(selected.toString(), precioTxt, nota, cantidad);
         listaPedidos.add(pedido);
@@ -395,41 +412,90 @@ public class PrincipalPanel extends JPanel {
     }
 
     private void procesarOrden() {
+        if (cobrando) {
+            return;
+        }
         if (listaPedidos.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Agregá al menos un producto al pedido.");
             return;
         }
+        if (!CajaService.hayCajaAbierta()) {
+            JOptionPane.showMessageDialog(this,
+                    "No podés cobrar sin caja abierta.\nAbrí la caja desde el botón «Caja» e intentá de nuevo.",
+                    "Caja cerrada", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-        double total = getTotalPedido();
+        double total = CajaService.round2(getTotalPedido());
+        if (total <= 0) {
+            JOptionPane.showMessageDialog(this, "El total del pedido debe ser mayor a 0.");
+            return;
+        }
+
+        // El ticket se arma con la misma lista que se persiste (misma fuente de verdad).
         String direccion = txtDireccion.getText().trim();
         String nota = txtNotaCliente.getText().trim();
         ClienteVenta cliente = getClienteSeleccionado();
         String ticket = TicketPrinter.buildSaleTicket(listaPedidos, direccion, nota, cliente);
-
-        // Guardar venta SIEMPRE, aunque falle la impresora.
-        boolean guardado = registrarVenta(total);
-        TicketPrinter.PrintResult result = TicketPrinter.printCopies(ticket, 1);
-
-        if (!result.printed) {
-            mostrarVistaPrevia("Vista previa del ticket", result.ticketText);
+        double totalTicket = totalDesdeTextoTicket(ticket);
+        if (Math.abs(totalTicket - total) > 0.009) {
+            JOptionPane.showMessageDialog(this,
+                    "Inconsistencia de totales (pedido $" + String.format("%.2f", total)
+                            + " vs ticket $" + String.format("%.2f", totalTicket)
+                            + "). No se cobró. Revisá el pedido.",
+                    "Error de total", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-        String msg = (guardado ? "Venta registrada. " : "No se pudo guardar el informe. ")
-                + result.message;
-        JOptionPane.showMessageDialog(this, msg, "Pedido procesado",
-                guardado ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+        cobrando = true;
+        try {
+            // Guardar venta SIEMPRE antes de imprimir; si falla DB no se da por cobrada.
+            boolean guardado = registrarVenta(total);
+            TicketPrinter.PrintResult result = TicketPrinter.printCopies(ticket, 1);
 
-        if (guardado) {
-            listaPedidos.clear();
-            listModel.clear();
-            actualizarTotal();
-            txtDireccion.setText("");
-            txtNotaCliente.setText("");
-            if (comboCliente.getItemCount() > 0) {
-                comboCliente.setSelectedIndex(0);
+            if (!result.printed) {
+                mostrarVistaPrevia("Vista previa del ticket", result.ticketText);
             }
-            onClienteSeleccionado();
+
+            String msg = (guardado ? "Venta registrada. " : "No se pudo guardar la venta. ")
+                    + result.message;
+            JOptionPane.showMessageDialog(this, msg, "Pedido procesado",
+                    guardado ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+
+            if (guardado) {
+                listaPedidos.clear();
+                listModel.clear();
+                actualizarTotal();
+                txtDireccion.setText("");
+                txtNotaCliente.setText("");
+                if (comboCliente.getItemCount() > 0) {
+                    comboCliente.setSelectedIndex(0);
+                }
+                onClienteSeleccionado();
+            }
+        } finally {
+            cobrando = false;
         }
+    }
+
+    /** Extrae el importe de la línea TOTAL del ticket para validar coherencia. */
+    private static double totalDesdeTextoTicket(String ticket) {
+        if (ticket == null) {
+            return -1;
+        }
+        for (String line : ticket.split("\n")) {
+            String t = line.trim();
+            if (t.startsWith("TOTAL")) {
+                String num = t.replace("TOTAL $:", "").replace("TOTAL $", "")
+                        .replace("TOTAL:", "").replace("$", "").trim();
+                try {
+                    return Double.parseDouble(num.replace(",", "."));
+                } catch (NumberFormatException e) {
+                    return -1;
+                }
+            }
+        }
+        return -1;
     }
 
     private void imprimirRepartidor() {
@@ -471,77 +537,103 @@ public class PrincipalPanel extends JPanel {
     }
 
     private boolean registrarVenta(double total) {
-        Date ahora = new Date();
-        String totalStr = String.valueOf(total);
-        conection conn = new conection();
-        try {
-            if (Boolean.TRUE.equals(existeInformeDiario(conn, ahora))) {
-                añadirInformeExistente(conn, ahora, totalStr);
-            } else {
-                sumoInforme(conn, ahora, totalStr);
-            }
-            registrarDetalleVenta(ahora);
-            return true;
-        } catch (Exception e) {
-            System.out.println("Error al registrar venta: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /** Guarda ítems con tipo/costo y cliente opcional. */
-    private void registrarDetalleVenta(Date fecha) {
-        String ahora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(fecha);
+        Date ahoraDate = new Date();
+        String ahora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(ahoraDate);
+        String dia = new SimpleDateFormat("yyyy-MM-dd").format(ahoraDate);
         ClienteVenta cliente = getClienteSeleccionado();
+
         String sqlMeta = "SELECT COALESCE(tipo, 'Otro') AS tipo, COALESCE(costo, 0) AS costo "
                 + "FROM menuPrecios WHERE nombre = ? LIMIT 1";
         String sqlIns = "INSERT INTO venta_detalle "
                 + "(fecha, producto, tipo, cantidad, precio_unit, costo_unit, subtotal, costo_total, "
                 + "cliente_id, cliente_celular, cliente_documento) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sqlUpdInf = "UPDATE informes SET total = total + ? WHERE DATE(fecha) = ?";
+        String sqlInsInf = "INSERT INTO informes (fecha, fechaActivo, total) VALUES (?, ?, ?)";
 
         try (Connection connection = new conection().getConnection()) {
-            for (Pedido p : listaPedidos) {
-                String tipo = "Otro";
-                double costoUnit = 0;
-                try (PreparedStatement meta = connection.prepareStatement(sqlMeta)) {
-                    meta.setString(1, p.getNombreProd());
-                    try (ResultSet rs = meta.executeQuery()) {
-                        if (rs.next()) {
-                            tipo = rs.getString("tipo");
-                            if (tipo == null || tipo.isBlank()) {
-                                tipo = "Otro";
-                            }
-                            costoUnit = rs.getDouble("costo");
+            connection.setAutoCommit(false);
+            try {
+                // 1) Informe diario (una sola fila por día, suma atómica)
+                try (PreparedStatement up = connection.prepareStatement(sqlUpdInf)) {
+                    up.setDouble(1, total);
+                    up.setString(2, dia);
+                    int updated = up.executeUpdate();
+                    if (updated == 0) {
+                        try (PreparedStatement ins = connection.prepareStatement(sqlInsInf)) {
+                            ins.setString(1, ahora);
+                            ins.setString(2, ahora);
+                            ins.setDouble(3, total);
+                            ins.executeUpdate();
                         }
                     }
                 }
-                double precioUnit = p.getPrecioUnitario();
-                double subtotal = p.getSubtotal();
-                double costoTotal = costoUnit * p.getCantidad();
-                try (PreparedStatement ins = connection.prepareStatement(sqlIns)) {
-                    ins.setString(1, ahora);
-                    ins.setString(2, p.getNombreProd());
-                    ins.setString(3, tipo);
-                    ins.setInt(4, p.getCantidad());
-                    ins.setDouble(5, precioUnit);
-                    ins.setDouble(6, costoUnit);
-                    ins.setDouble(7, subtotal);
-                    ins.setDouble(8, costoTotal);
-                    if (cliente != null) {
-                        ins.setInt(9, cliente.id);
-                        ins.setString(10, cliente.celular);
-                        ins.setString(11, cliente.documento);
-                    } else {
-                        ins.setObject(9, null);
-                        ins.setString(10, null);
-                        ins.setString(11, null);
+
+                // 2) Detalle línea a línea (misma transacción)
+                double sumaLineas = 0;
+                for (Pedido p : listaPedidos) {
+                    String tipo = "Otro";
+                    double costoUnit = 0;
+                    try (PreparedStatement meta = connection.prepareStatement(sqlMeta)) {
+                        meta.setString(1, p.getNombreProd());
+                        try (ResultSet rs = meta.executeQuery()) {
+                            if (rs.next()) {
+                                tipo = rs.getString("tipo");
+                                if (tipo == null || tipo.isBlank()) {
+                                    tipo = "Otro";
+                                }
+                                costoUnit = rs.getDouble("costo");
+                            }
+                        }
                     }
-                    ins.executeUpdate();
+                    double precioUnit = p.getPrecioUnitario();
+                    double subtotal = CajaService.round2(p.getSubtotal());
+                    sumaLineas = CajaService.round2(sumaLineas + subtotal);
+                    double costoTotal = costoUnit * p.getCantidad();
+                    try (PreparedStatement ins = connection.prepareStatement(sqlIns)) {
+                        ins.setString(1, ahora);
+                        ins.setString(2, p.getNombreProd());
+                        ins.setString(3, tipo);
+                        ins.setInt(4, p.getCantidad());
+                        ins.setDouble(5, precioUnit);
+                        ins.setDouble(6, costoUnit);
+                        ins.setDouble(7, subtotal);
+                        ins.setDouble(8, costoTotal);
+                        if (cliente != null) {
+                            ins.setInt(9, cliente.id);
+                            ins.setString(10, cliente.celular);
+                            ins.setString(11, cliente.documento);
+                        } else {
+                            ins.setObject(9, null);
+                            ins.setString(10, null);
+                            ins.setString(11, null);
+                        }
+                        ins.executeUpdate();
+                    }
+                }
+
+                if (Math.abs(sumaLineas - total) > 0.009) {
+                    throw new SQLException("Suma de líneas (" + sumaLineas + ") != total (" + total + ")");
+                }
+
+                connection.commit();
+                return true;
+            } catch (Exception ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException ignored) {
+                }
+                System.out.println("Error al registrar venta (rollback): " + ex.getMessage());
+                return false;
+            } finally {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (SQLException ignored) {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error al guardar detalle de venta: " + e.getMessage());
-            throw new RuntimeException(e);
+            System.out.println("Error de conexión al registrar venta: " + e.getMessage());
+            return false;
         }
     }
 
@@ -782,64 +874,6 @@ public class PrincipalPanel extends JPanel {
             }
         } catch (SQLException e) {
             System.out.println("Error al buscar precio: " + e.getMessage());
-        }
-    }
-
-    public void sumoInforme(conection conn, Date dateInforme, String precioGlobal) {
-        // fechaActivo existe en DBs viejas como NOT NULL: se completa con la misma fecha.
-        String insertSql = "INSERT INTO informes (fecha, fechaActivo, total) VALUES (?, ?, ?)";
-        try (Connection connection = conn.getConnection();
-             PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            String fecha = dateFormat.format(dateInforme);
-            insertStmt.setString(1, fecha);
-            insertStmt.setString(2, fecha);
-            insertStmt.setDouble(3, Double.parseDouble(precioGlobal));
-            insertStmt.executeUpdate();
-        } catch (SQLException | NumberFormatException e) {
-            System.out.println("Error al guardar informe: " + e.getMessage());
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Boolean existeInformeDiario(conection conn, Date dateInforme) {
-        String selectSql = "SELECT 1 FROM informes WHERE DATE(fecha) = ? LIMIT 1";
-        try (Connection connection = conn.getConnection();
-             PreparedStatement selectStmt = connection.prepareStatement(selectSql)) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            selectStmt.setString(1, dateFormat.format(dateInforme));
-            try (ResultSet rs = selectStmt.executeQuery()) {
-                return rs.next();
-            }
-        } catch (SQLException e) {
-            System.out.println("Error al verificar informe diario: " + e.getMessage());
-            return false;
-        }
-    }
-
-    public void añadirInformeExistente(conection conn, Date dateInforme, String precioGlobal) {
-        String selectSql = "SELECT id, total FROM informes WHERE DATE(fecha) = ? LIMIT 1";
-        String updateSql = "UPDATE informes SET total = ? WHERE id = ?";
-        try (Connection connection = conn.getConnection();
-             PreparedStatement selectStmt = connection.prepareStatement(selectSql)) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            selectStmt.setString(1, dateFormat.format(dateInforme));
-            try (ResultSet rs = selectStmt.executeQuery()) {
-                if (rs.next()) {
-                    int idInforme = rs.getInt("id");
-                    double totalNuevo = rs.getDouble("total") + Double.parseDouble(precioGlobal);
-                    try (PreparedStatement updateStmt = connection.prepareStatement(updateSql)) {
-                        updateStmt.setDouble(1, totalNuevo);
-                        updateStmt.setInt(2, idInforme);
-                        updateStmt.executeUpdate();
-                    }
-                } else {
-                    sumoInforme(conn, dateInforme, precioGlobal);
-                }
-            }
-        } catch (SQLException | NumberFormatException e) {
-            System.out.println("Error al actualizar informe existente: " + e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 

@@ -26,6 +26,10 @@ public class conection {
      * Prioridad: carpeta del JAR → carpeta padre → crear junto al JAR.
      */
     public static String resolveDatabasePath() {
+        String override = System.getProperty("proyectomago.db.path");
+        if (override != null && !override.isBlank()) {
+            return override;
+        }
         try {
             File jarDir = new File(conection.class
                     .getProtectionDomain()
@@ -52,6 +56,11 @@ public class conection {
             File cwd = new File(System.getProperty("user.dir"), DB_FILE_NAME);
             return cwd.getAbsolutePath();
         }
+    }
+
+    /** Solo para tests: fuerza recrear schema en la próxima conexión. */
+    public static void resetSchemaFlagForTests() {
+        schemaReady = false;
     }
 
     public Connection getConnection() throws SQLException {
