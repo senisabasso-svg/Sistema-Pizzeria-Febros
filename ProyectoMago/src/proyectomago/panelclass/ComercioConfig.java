@@ -24,6 +24,8 @@ public final class ComercioConfig {
     private static final String KEY_NOMBRE = "nombreComercio";
     private static final String KEY_LOGO = "logoPath";
     private static final String KEY_IMPRESORA = "impresora";
+    private static final String KEY_IMPRIMIR_LOGO = "imprimirLogoTicket";
+    private static final String KEY_LOGO_TICKET_PCT = "logoTicketPorcentaje";
     private static final String KEY_API_URL = "apiUrl";
     private static final String KEY_ID_CLIENTE = "idCliente";
     private static final String KEY_ACCESS_KEY = "accessKey";
@@ -39,6 +41,13 @@ public final class ComercioConfig {
     private String nombreComercio = DEFAULT_NOMBRE;
     private String logoPath = "";
     private String impresora = "";
+    /** Si true, el ticket térmico intenta imprimir el logo arriba del texto. */
+    private boolean imprimirLogoTicket = false;
+    /**
+     * Tamaño del logo en ticket: porcentaje del ancho útil (~576 pts).
+     * Valores típicos: 45, 60, 75, 90, 100, 110.
+     */
+    private int logoTicketPorcentaje = 75;
     private String apiUrl = "";
     private String idCliente = "";
     private String accessKey = "";
@@ -78,6 +87,33 @@ public final class ComercioConfig {
 
     public void setImpresora(String impresora) {
         this.impresora = impresora == null ? "" : impresora.trim();
+    }
+
+    public boolean isImprimirLogoTicket() {
+        return imprimirLogoTicket;
+    }
+
+    public void setImprimirLogoTicket(boolean imprimirLogoTicket) {
+        this.imprimirLogoTicket = imprimirLogoTicket;
+    }
+
+    public int getLogoTicketPorcentaje() {
+        return logoTicketPorcentaje;
+    }
+
+    public void setLogoTicketPorcentaje(int logoTicketPorcentaje) {
+        // Acepta las 6 opciones (y tolera valores viejos del spinner).
+        int[] allowed = {45, 60, 75, 90, 100, 110};
+        int best = 75;
+        int bestDist = Integer.MAX_VALUE;
+        for (int a : allowed) {
+            int d = Math.abs(a - logoTicketPorcentaje);
+            if (d < bestDist) {
+                bestDist = d;
+                best = a;
+            }
+        }
+        this.logoTicketPorcentaje = best;
     }
 
     public String getApiUrl() {
@@ -277,6 +313,12 @@ public final class ComercioConfig {
             nombreComercio = props.getProperty(KEY_NOMBRE, DEFAULT_NOMBRE);
             logoPath = props.getProperty(KEY_LOGO, "");
             impresora = props.getProperty(KEY_IMPRESORA, "");
+            imprimirLogoTicket = Boolean.parseBoolean(props.getProperty(KEY_IMPRIMIR_LOGO, "false"));
+            try {
+                setLogoTicketPorcentaje(Integer.parseInt(props.getProperty(KEY_LOGO_TICKET_PCT, "75")));
+            } catch (NumberFormatException e) {
+                logoTicketPorcentaje = 75;
+            }
             apiUrl = props.getProperty(KEY_API_URL, "");
             idCliente = props.getProperty(KEY_ID_CLIENTE, "");
             accessKey = props.getProperty(KEY_ACCESS_KEY, "");
@@ -296,6 +338,8 @@ public final class ComercioConfig {
         props.setProperty(KEY_NOMBRE, getNombreComercio());
         props.setProperty(KEY_LOGO, logoPath == null ? "" : logoPath);
         props.setProperty(KEY_IMPRESORA, impresora == null ? "" : impresora);
+        props.setProperty(KEY_IMPRIMIR_LOGO, String.valueOf(imprimirLogoTicket));
+        props.setProperty(KEY_LOGO_TICKET_PCT, String.valueOf(logoTicketPorcentaje));
         props.setProperty(KEY_API_URL, getApiUrl());
         props.setProperty(KEY_ID_CLIENTE, getIdCliente());
         props.setProperty(KEY_ACCESS_KEY, getAccessKey());

@@ -408,7 +408,7 @@ public class PrincipalPanel extends JPanel {
 
         // Guardar venta SIEMPRE, aunque falle la impresora.
         boolean guardado = registrarVenta(total);
-        TicketPrinter.PrintResult result = TicketPrinter.printCopies(ticket, 2);
+        TicketPrinter.PrintResult result = TicketPrinter.printCopies(ticket, 1);
 
         if (!result.printed) {
             mostrarVistaPrevia("Vista previa del ticket", result.ticketText);

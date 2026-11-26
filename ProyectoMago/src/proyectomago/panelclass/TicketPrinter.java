@@ -1,8 +1,13 @@
 package proyectomago.panelclass;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
+import javax.imageio.ImageIO;
 import javax.print.Doc;
 import javax.print.DocFlavor;
 import javax.print.DocPrintJob;
@@ -11,10 +16,13 @@ import javax.print.SimpleDoc;
 
 /**
  * Impresión térmica ESC/POS con impresora configurada o vista previa.
+ * Opcionalmente antepone el logo como imagen raster (GS v 0).
  */
 public final class TicketPrinter {
 
     private static final Charset CHARSET = Charset.forName("UTF-8");
+    /** Ancho útil típico de térmica 80 mm (puntos). */
+    private static final int PAPER_WIDTH_DOTS = 576;
 
     private TicketPrinter() {
     }
@@ -54,35 +62,49 @@ public final class TicketPrinter {
     public static String buildSaleTicket(List<Pedido> pedidos, String direccion, String notaCliente,
                                         String clienteNombre, String celular, String documento) {
         String nombre = getLocalName();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        String fecha = String.format("%02d-%02d-%04d",
+                now.getDayOfMonth(), now.getMonthValue(), now.getYear());
+        String hora = String.format("%02d:%02d:%02d",
+                now.getHour(), now.getMinute(), now.getSecond());
+
         StringBuilder sb = new StringBuilder();
-        sb.append("--------------------------------\n");
+        // Cabecera (el logo ya va arriba por ESC/POS si está activo)
         sb.append(center(nombre)).append("\n");
-        sb.append(center("TICKET DE VENTA")).append("\n");
-        sb.append("--------------------------------\n");
-        double total = 0;
-        for (Pedido p : pedidos) {
-            sb.append(p.toTicketLine()).append("\n");
-            total += p.getSubtotal();
-        }
-        sb.append("--------------------------------\n");
-        sb.append("ITEMS: ").append(pedidos.size()).append("\n");
-        sb.append("TOTAL: $").append(String.format("%.0f", total)).append("\n");
+        sb.append(dashed()).append("\n");
+        sb.append("Fecha: ").append(fecha).append("\n");
+        sb.append("Hora:  ").append(hora).append("\n");
         if (clienteNombre != null && !clienteNombre.isBlank()) {
-            sb.append("CLIENTE: ").append(clienteNombre.trim()).append("\n");
+            sb.append("Cliente: ").append(fit(clienteNombre.trim(), W - 9)).append("\n");
         }
         if (celular != null && !celular.isBlank()) {
-            sb.append("CEL: ").append(celular.trim()).append("\n");
+            sb.append("Cel: ").append(celular.trim()).append("\n");
         }
         if (documento != null && !documento.isBlank()) {
-            sb.append("DOC: ").append(documento.trim()).append("\n");
+            sb.append("Doc: ").append(documento.trim()).append("\n");
         }
         if (direccion != null && !direccion.isBlank()) {
-            sb.append("DIR: ").append(direccion.trim()).append("\n");
+            sb.append("Dir: ").append(fit(direccion.trim(), W - 5)).append("\n");
         }
         if (notaCliente != null && !notaCliente.isBlank()) {
-            sb.append("NOTA: ").append(notaCliente.trim()).append("\n");
+            sb.append("Nota: ").append(fit(notaCliente.trim(), W - 6)).append("\n");
         }
-        sb.append("--------------------------------\n");
+
+        // Tabla de ítems
+        sb.append(dashed()).append("\n");
+        sb.append(colHeader()).append("\n");
+        sb.append(dashed()).append("\n");
+        double total = 0;
+        if (pedidos != null) {
+            for (Pedido p : pedidos) {
+                sb.append(formatItemLines(p));
+                total += p.getSubtotal();
+            }
+        }
+        sb.append(dashed()).append("\n");
+        sb.append(padLeft("TOTAL $ " + money(total), W)).append("\n");
+        sb.append(dashed()).append("\n");
+        // Pie mínimo por ahora (luego lo mejoramos)
         sb.append(center("Gracias por su compra")).append("\n");
         sb.append("\n\n\n");
         return sb.toString();
@@ -116,10 +138,16 @@ public final class TicketPrinter {
             }
 
             byte[] cut = new byte[]{0x1D, 'V', 1};
+            byte[] logoBytes = buildLogoEscPosOrEmpty();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             for (int i = 1; i <= copies; i++) {
-                String header = "---------- TICKET " + i + " ----------\n";
-                out.write(header.getBytes(CHARSET));
+                if (logoBytes.length > 0) {
+                    out.write(logoBytes);
+                }
+                // Sin banner "TICKET N" cuando es una sola copia (más limpio)
+                if (copies > 1) {
+                    out.write(("---------- TICKET " + i + " ----------\n").getBytes(CHARSET));
+                }
                 out.write(ticketBody.getBytes(CHARSET));
                 out.write("\n\n".getBytes(CHARSET));
                 out.write(cut);
@@ -128,21 +156,245 @@ public final class TicketPrinter {
             DocPrintJob job = printer.createPrintJob();
             Doc doc = new SimpleDoc(out.toByteArray(), DocFlavor.BYTE_ARRAY.AUTOSENSE, null);
             job.print(doc, null);
-            return new PrintResult(true, "Impresión enviada a " + printer.getName(), ticketBody);
+            String extra = logoBytes.length > 0 ? " (con logo)" : "";
+            return new PrintResult(true, "Impresión enviada a " + printer.getName() + extra, ticketBody);
         } catch (Exception e) {
             return new PrintResult(false, "Error al imprimir: " + e.getMessage(), ticketBody);
         }
     }
 
+    /**
+     * Raster ESC/POS del logo si la opción está activa y el archivo existe.
+     * Ante cualquier error devuelve vacío → el ticket sigue solo texto.
+     */
+    private static byte[] buildLogoEscPosOrEmpty() {
+        ComercioConfig cfg = ComercioConfig.get();
+        if (!cfg.isImprimirLogoTicket()) {
+            return new byte[0];
+        }
+        File logoFile = cfg.resolveLogoFile();
+        if (logoFile == null || !logoFile.exists()) {
+            return new byte[0];
+        }
+        try {
+            BufferedImage src = ImageIO.read(logoFile);
+            if (src == null) {
+                return new byte[0];
+            }
+            // pct = % del ancho del papel (45…110). 110 ≈ un poco más ancho/alto.
+            int pct = cfg.getLogoTicketPorcentaje();
+            int maxW = Math.max(96, (int) Math.round(PAPER_WIDTH_DOTS * (pct / 100.0)));
+            maxW = Math.min(maxW, PAPER_WIDTH_DOTS);
+            // Altura generosa para que el logo se vea grande (antes el tope era muy bajo).
+            int maxH = Math.max(80, (int) Math.round(maxW * 0.85));
+            if (pct >= 100) {
+                maxH = Math.max(maxH, 360);
+            }
+            if (pct >= 110) {
+                maxH = Math.max(maxH, 420);
+            }
+            BufferedImage mono = toMonoRaster(src, maxW, maxH);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            // Centrar
+            out.write(new byte[]{0x1B, 'a', 1});
+            out.write(encodeGsV0(mono));
+            out.write('\n');
+            // Volver a alineación izquierda para el texto
+            out.write(new byte[]{0x1B, 'a', 0});
+            return out.toByteArray();
+        } catch (Exception e) {
+            System.out.println("No se pudo preparar logo para ticket: " + e.getMessage());
+            return new byte[0];
+        }
+    }
+
+    private static BufferedImage toMonoRaster(BufferedImage src, int maxW, int maxH) {
+        int w = src.getWidth();
+        int h = src.getHeight();
+        // Permite agrandar logos chicos hasta el tamaño elegido (antes no upscaleaba).
+        double scale = Math.min(maxW / (double) w, maxH / (double) h);
+        int nw = Math.max(1, (int) Math.round(w * scale));
+        // Ancho múltiplo de 8 para empaquetado limpio
+        nw = (nw + 7) / 8 * 8;
+        if (nw > maxW) {
+            nw = maxW / 8 * 8;
+        }
+        int nh = Math.max(1, (int) Math.round(h * (nw / (double) w)));
+        if (nh > maxH) {
+            nh = maxH;
+        }
+
+        BufferedImage scaled = new BufferedImage(nw, nh, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = scaled.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, nw, nh);
+        g.drawImage(src, 0, 0, nw, nh, null);
+        g.dispose();
+
+        BufferedImage mono = new BufferedImage(nw, nh, BufferedImage.TYPE_BYTE_BINARY);
+        for (int y = 0; y < nh; y++) {
+            for (int x = 0; x < nw; x++) {
+                int rgb = scaled.getRGB(x, y);
+                int r = (rgb >> 16) & 0xFF;
+                int gr = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+                int lum = (r * 30 + gr * 59 + b * 11) / 100;
+                // Negro = imprime; blanco = no
+                mono.setRGB(x, y, lum < 180 ? 0x000000 : 0xFFFFFF);
+            }
+        }
+        return mono;
+    }
+
+    /** GS v 0 m xL xH yL yH d1..dk */
+    private static byte[] encodeGsV0(BufferedImage mono) throws Exception {
+        int width = mono.getWidth();
+        int height = mono.getHeight();
+        int widthBytes = (width + 7) / 8;
+        ByteArrayOutputStream data = new ByteArrayOutputStream(widthBytes * height);
+        for (int y = 0; y < height; y++) {
+            for (int xByte = 0; xByte < widthBytes; xByte++) {
+                int b = 0;
+                for (int bit = 0; bit < 8; bit++) {
+                    int x = xByte * 8 + bit;
+                    if (x < width) {
+                        int rgb = mono.getRGB(x, y) & 0xFFFFFF;
+                        // En ESC/POS, bit 1 = punto negro
+                        if (rgb == 0) {
+                            b |= (0x80 >> bit);
+                        }
+                    }
+                }
+                data.write(b);
+            }
+        }
+        byte[] raster = data.toByteArray();
+        ByteArrayOutputStream cmd = new ByteArrayOutputStream(8 + raster.length);
+        cmd.write(0x1D);
+        cmd.write('v');
+        cmd.write('0');
+        cmd.write(0); // m = normal
+        cmd.write(widthBytes & 0xFF);
+        cmd.write((widthBytes >> 8) & 0xFF);
+        cmd.write(height & 0xFF);
+        cmd.write((height >> 8) & 0xFF);
+        cmd.write(raster);
+        return cmd.toByteArray();
+    }
+
+    private static final int W = 32;
+
+    private static String dashed() {
+        return "-".repeat(W);
+    }
+
+    private static String colHeader() {
+        // Articulo(14) Cant(4) Prec(6) Imp(7) + 1 espacio entre = 32
+        return padRight("Articulo", 14)
+                + padLeft("Cant", 4)
+                + padLeft("Prec", 6)
+                + padLeft("Imp", 7);
+    }
+
+    private static String formatItemLines(Pedido p) {
+        StringBuilder lines = new StringBuilder();
+        String name = p.getNombreProd() == null ? "" : p.getNombreProd().trim();
+        String cant = String.valueOf(p.getCantidad());
+        String prec = money(p.getPrecioUnitario());
+        String imp = money(p.getSubtotal());
+
+        if (name.length() <= 14) {
+            lines.append(padRight(name, 14))
+                    .append(padLeft(cant, 4))
+                    .append(padLeft(prec, 6))
+                    .append(padLeft(imp, 7))
+                    .append("\n");
+        } else {
+            // Nombre completo en una línea; cantidades alineadas debajo
+            lines.append(wrapLeft(name, W)).append("\n");
+            lines.append(padRight("", 14))
+                    .append(padLeft(cant, 4))
+                    .append(padLeft(prec, 6))
+                    .append(padLeft(imp, 7))
+                    .append("\n");
+        }
+
+        String nota = p.getNota();
+        if (nota != null && !nota.isBlank() && !"Sin Aderezos".equalsIgnoreCase(nota.trim())) {
+            lines.append("  (").append(fit(nota.trim(), W - 4)).append(")\n");
+        }
+        return lines.toString();
+    }
+
+    private static String money(double v) {
+        if (Math.abs(v - Math.rint(v)) < 0.001) {
+            return String.format("%.0f", v);
+        }
+        return String.format("%.2f", v);
+    }
+
     private static String center(String text) {
-        int width = 32;
         if (text == null) {
             text = "";
         }
-        if (text.length() >= width) {
+        if (text.length() >= W) {
+            return text.substring(0, W);
+        }
+        int pad = (W - text.length()) / 2;
+        return " ".repeat(pad) + text;
+    }
+
+    private static String padRight(String text, int width) {
+        if (text == null) {
+            text = "";
+        }
+        if (text.length() > width) {
+            return text.substring(0, width);
+        }
+        return text + " ".repeat(width - text.length());
+    }
+
+    private static String padLeft(String text, int width) {
+        if (text == null) {
+            text = "";
+        }
+        if (text.length() > width) {
+            return text.substring(text.length() - width);
+        }
+        return " ".repeat(width - text.length()) + text;
+    }
+
+    private static String fit(String text, int width) {
+        if (text == null) {
+            return "";
+        }
+        if (text.length() <= width) {
             return text;
         }
-        int pad = (width - text.length()) / 2;
-        return " ".repeat(pad) + text;
+        if (width <= 1) {
+            return text.substring(0, width);
+        }
+        return text.substring(0, width - 1) + ".";
+    }
+
+    private static String wrapLeft(String text, int width) {
+        if (text == null) {
+            return "";
+        }
+        if (text.length() <= width) {
+            return text;
+        }
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        while (i < text.length()) {
+            int end = Math.min(i + width, text.length());
+            if (i > 0) {
+                sb.append('\n');
+            }
+            sb.append(text, i, end);
+            i = end;
+        }
+        return sb.toString();
     }
 }

@@ -13,6 +13,7 @@ import javax.print.PrintService;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -33,7 +34,25 @@ public class ConfiguracionDialog extends JDialog {
     private final ComercioConfig config = ComercioConfig.get();
     private final JTextField txtNombre = new JTextField(24);
     private final JComboBox<String> comboImpresora = new JComboBox<>();
+    private final JCheckBox chkLogoTicket = new JCheckBox("Imprimir logo en el ticket");
+    private final JComboBox<LogoSizeOption> comboLogoSize = new JComboBox<>();
+    private final JLabel lblLogoPct = new JLabel("Tamaño del logo en ticket");
     private final JTextField txtApiUrl = new JTextField(28);
+
+    private static final class LogoSizeOption {
+        final int pct;
+        final String label;
+
+        LogoSizeOption(int pct, String label) {
+            this.pct = pct;
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
     private final JTextField txtIdCliente = new JTextField(28);
     private final JPasswordField txtAccessKey = new JPasswordField(28);
     private final JLabel lblLicencia = new JLabel(" ");
@@ -46,7 +65,7 @@ public class ConfiguracionDialog extends JDialog {
         super(owner, "Configuración comercio", true);
         this.onSaved = onSaved;
 
-        setSize(620, 640);
+        setSize(620, 720);
         setLocationRelativeTo(owner);
         getContentPane().setBackground(UiTheme.BG);
         setLayout(new BorderLayout(12, 12));
@@ -124,6 +143,38 @@ public class ConfiguracionDialog extends JDialog {
         c.gridy = y++;
         form.add(btnRefresh, c);
 
+        chkLogoTicket.setOpaque(false);
+        chkLogoTicket.setFont(UiTheme.BODY);
+        chkLogoTicket.setForeground(UiTheme.INK);
+        chkLogoTicket.setToolTipText("Si está marcado, intenta imprimir el logo arriba del ticket. "
+                + "Si falla o no hay logo, imprime solo texto como siempre.");
+        chkLogoTicket.addActionListener(e -> actualizarEstadoLogoPct());
+        c.gridy = y++;
+        form.add(chkLogoTicket, c);
+
+        lblLogoPct.setFont(UiTheme.BODY_BOLD);
+        lblLogoPct.setForeground(UiTheme.INK);
+        c.gridy = y++;
+        form.add(lblLogoPct, c);
+
+        comboLogoSize.removeAllItems();
+        comboLogoSize.addItem(new LogoSizeOption(45, "1 · Chico"));
+        comboLogoSize.addItem(new LogoSizeOption(60, "2 · Normal"));
+        comboLogoSize.addItem(new LogoSizeOption(75, "3 · Mediano"));
+        comboLogoSize.addItem(new LogoSizeOption(90, "4 · Grande"));
+        comboLogoSize.addItem(new LogoSizeOption(100, "5 · Muy grande"));
+        comboLogoSize.addItem(new LogoSizeOption(110, "6 · Máximo (ancho completo)"));
+        styleCombo(comboLogoSize);
+        c.gridy = y++;
+        form.add(comboLogoSize, c);
+
+        JLabel tipLogo = new JLabel("<html>Elegí una de las 6 opciones. «Máximo» usa casi todo el ancho del ticket. "
+                + "Solo aplica si «Imprimir logo» está marcado.</html>");
+        tipLogo.setFont(UiTheme.SMALL);
+        tipLogo.setForeground(UiTheme.MUTED);
+        c.gridy = y++;
+        form.add(tipLogo, c);
+
         c.gridy = y++;
         form.add(section("Activación / licencia remota"), c);
 
@@ -188,10 +239,42 @@ public class ConfiguracionDialog extends JDialog {
         txtIdCliente.setText(config.getIdCliente());
         txtAccessKey.setText(config.getAccessKey());
         cargarImpresoras(config.getImpresora());
+        chkLogoTicket.setSelected(config.isImprimirLogoTicket());
+        seleccionarLogoSize(config.getLogoTicketPorcentaje());
+        actualizarEstadoLogoPct();
         File logo = config.resolveLogoFile();
         logoSeleccionado = logo;
         mostrarPreview(logo);
         actualizarLabelLicencia();
+    }
+
+    private void seleccionarLogoSize(int pct) {
+        for (int i = 0; i < comboLogoSize.getItemCount(); i++) {
+            LogoSizeOption opt = comboLogoSize.getItemAt(i);
+            if (opt != null && opt.pct == pct) {
+                comboLogoSize.setSelectedIndex(i);
+                return;
+            }
+        }
+        // Valor viejo: el más cercano
+        int bestIdx = 2;
+        int bestDist = Integer.MAX_VALUE;
+        for (int i = 0; i < comboLogoSize.getItemCount(); i++) {
+            LogoSizeOption opt = comboLogoSize.getItemAt(i);
+            int d = Math.abs(opt.pct - pct);
+            if (d < bestDist) {
+                bestDist = d;
+                bestIdx = i;
+            }
+        }
+        comboLogoSize.setSelectedIndex(bestIdx);
+    }
+
+    private void actualizarEstadoLogoPct() {
+        boolean on = chkLogoTicket.isSelected();
+        comboLogoSize.setEnabled(on);
+        lblLogoPct.setEnabled(on);
+        lblLogoPct.setForeground(on ? UiTheme.INK : UiTheme.MUTED);
     }
 
     private void actualizarLabelLicencia() {
@@ -293,6 +376,9 @@ public class ConfiguracionDialog extends JDialog {
             } else {
                 config.setImpresora(printerItem.toString());
             }
+            config.setImprimirLogoTicket(chkLogoTicket.isSelected());
+            LogoSizeOption sizeOpt = (LogoSizeOption) comboLogoSize.getSelectedItem();
+            config.setLogoTicketPorcentaje(sizeOpt != null ? sizeOpt.pct : 75);
 
             if (logoSeleccionado != null && logoSeleccionado.exists()) {
                 File destinoEsperadoPng = config.getDefaultLogoFile();
