@@ -128,7 +128,8 @@ public class conection {
                 + "precio_unit REAL NOT NULL, "
                 + "costo_unit REAL NOT NULL DEFAULT 0, "
                 + "subtotal REAL NOT NULL, "
-                + "costo_total REAL NOT NULL DEFAULT 0"
+                + "costo_total REAL NOT NULL DEFAULT 0, "
+                + "forma_pago TEXT DEFAULT 'EFECTIVO'"
                 + ");";
 
         String proveedores = "CREATE TABLE IF NOT EXISTS proveedores ("
@@ -198,6 +199,7 @@ public class conection {
             }
             ensureColumn(stmt, "stock", "categoria", "TEXT DEFAULT 'Mercadería'");
             ensureColumn(stmt, "stock", "proveedor_id", "INTEGER");
+            ensureColumn(stmt, "venta_detalle", "forma_pago", "TEXT DEFAULT 'EFECTIVO'");
         } catch (SQLException e) {
             System.out.println("Error al verificar tablas: " + e.getMessage());
         }

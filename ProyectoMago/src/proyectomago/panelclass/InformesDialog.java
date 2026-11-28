@@ -23,6 +23,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.awt.Component;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.Desktop;
 import java.io.File;
 import javax.swing.BorderFactory;
@@ -64,7 +66,11 @@ public class InformesDialog extends JDialog {
     private final JLabel kpiCosto = new JLabel("$0");
     private final JLabel kpiGanancia = new JLabel("$0");
     private final JLabel kpiMargen = new JLabel("0%");
+    private final JLabel kpiEfectivo = new JLabel("$0");
+    private final JLabel kpiTarjeta = new JLabel("$0");
     private final JLabel lblHint = new JLabel(" ");
+    /** Día SQL (yyyy-MM-dd) por fila visible de la tabla. */
+    private final List<String> rowDayKeys = new ArrayList<>();
 
     private static final DateTimeFormatter SQL_DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter SHOW_DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -82,8 +88,8 @@ public class InformesDialog extends JDialog {
 
     public InformesDialog(JFrame owner) {
         super(owner, "Informes almacén · ventas y ganancia", true);
-        setSize(1100, 860);
-        setMinimumSize(new Dimension(960, 740));
+        setSize(1180, 880);
+        setMinimumSize(new Dimension(1020, 760));
         setLocationRelativeTo(owner);
         getContentPane().setBackground(UiTheme.BG);
         setLayout(new BorderLayout(10, 10));
@@ -100,7 +106,7 @@ public class InformesDialog extends JDialog {
         spinHasta.setEditor(new JSpinner.DateEditor(spinHasta, "dd/MM/yyyy"));
 
         model = new DefaultTableModel(
-                new Object[]{"Fecha", "Ventas", "Costo", "Ganancia", "Margen"}, 0) {
+                new Object[]{"Fecha", "Ventas", "Efectivo", "Tarjeta", "Costo", "Ganancia", "Margen"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -108,6 +114,17 @@ public class InformesDialog extends JDialog {
         };
         table = new JTable(model);
         styleTable(table);
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = table.getSelectedRow();
+                    if (row >= 0 && row < rowDayKeys.size()) {
+                        abrirDetalleDia(rowDayKeys.get(row));
+                    }
+                }
+            }
+        });
 
         chartTipo.setTitle("Ventas por tipo");
         chartResultado.setTitle("Resultado del período");
@@ -129,7 +146,7 @@ public class InformesDialog extends JDialog {
         JPanel detail = new UiTheme.RoundedPanel(16, UiTheme.SURFACE, UiTheme.BORDER);
         detail.setLayout(new BorderLayout(0, 8));
         detail.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
-        JLabel detailTitle = new JLabel("Detalle diario");
+        JLabel detailTitle = new JLabel("Detalle diario · doble clic en un día para ver ventas");
         detailTitle.setFont(UiTheme.HEADING);
         detailTitle.setForeground(UiTheme.INK);
         JScrollPane scroll = new JScrollPane(table);
@@ -223,9 +240,11 @@ public class InformesDialog extends JDialog {
     }
 
     private JPanel buildKpis() {
-        JPanel row = new JPanel(new GridLayout(1, 4, 10, 0));
+        JPanel row = new JPanel(new GridLayout(1, 6, 8, 0));
         row.setOpaque(false);
         row.add(compactKpi("Ventas", kpiVentas, UiTheme.INK));
+        row.add(compactKpi("Efectivo", kpiEfectivo, UiTheme.INK));
+        row.add(compactKpi("Tarjeta", kpiTarjeta, UiTheme.ACCENT));
         row.add(compactKpi("Costo", kpiCosto, UiTheme.MUTED));
         row.add(compactKpi("Ganancia", kpiGanancia, UiTheme.SUCCESS));
         row.add(compactKpi("Margen", kpiMargen, UiTheme.ACCENT));
@@ -348,6 +367,7 @@ public class InformesDialog extends JDialog {
 
     private void buscar() {
         model.setRowCount(0);
+        rowDayKeys.clear();
         Date desdeDate = (Date) spinDesde.getValue();
         Date hastaDate = (Date) spinHasta.getValue();
         if (desdeDate.after(hastaDate)) {
@@ -366,7 +386,11 @@ public class InformesDialog extends JDialog {
         boolean hayDetalle = false;
 
         String sqlDetalle = "SELECT DATE(fecha) AS dia, tipo, "
-                + "SUM(subtotal) AS ventas, SUM(costo_total) AS costo "
+                + "SUM(subtotal) AS ventas, SUM(costo_total) AS costo, "
+                + "SUM(CASE WHEN upper(COALESCE(NULLIF(trim(forma_pago), ''), 'EFECTIVO')) = 'TARJETA' "
+                + "THEN subtotal ELSE 0 END) AS tarjeta, "
+                + "SUM(CASE WHEN upper(COALESCE(NULLIF(trim(forma_pago), ''), 'EFECTIVO')) <> 'TARJETA' "
+                + "THEN subtotal ELSE 0 END) AS efectivo "
                 + "FROM venta_detalle "
                 + "WHERE DATE(fecha) >= ? AND DATE(fecha) <= ? "
                 + (filtrarTipo ? "AND tipo = ? " : "")
@@ -390,9 +414,13 @@ public class InformesDialog extends JDialog {
                     }
                     double ventas = rs.getDouble("ventas");
                     double costo = rs.getDouble("costo");
-                    double[] acc = porDia.computeIfAbsent(dia, k -> new double[2]);
+                    double efectivo = rs.getDouble("efectivo");
+                    double tarjeta = rs.getDouble("tarjeta");
+                    double[] acc = porDia.computeIfAbsent(dia, k -> new double[4]);
                     acc[0] += ventas;
                     acc[1] += costo;
+                    acc[2] += efectivo;
+                    acc[3] += tarjeta;
                     porTipo.merge(tipo, ventas, Double::sum);
                 }
             }
@@ -418,8 +446,9 @@ public class InformesDialog extends JDialog {
                             dia = raw != null && raw.length() >= 10 ? raw.substring(0, 10) : raw;
                         }
                         double total = rs.getDouble("total");
-                        double[] acc = porDia.computeIfAbsent(dia, k -> new double[2]);
+                        double[] acc = porDia.computeIfAbsent(dia, k -> new double[4]);
                         acc[0] += total;
+                        acc[2] += total; // sin detalle: se asume efectivo
                     }
                 }
             } catch (SQLException ex) {
@@ -444,6 +473,8 @@ public class InformesDialog extends JDialog {
             double[] v = porDia.get(diaSql);
             double ventas = v[0];
             double costo = v[1];
+            double efectivo = v.length > 2 ? v[2] : ventas;
+            double tarjeta = v.length > 3 ? v[3] : 0;
             double ganancia = ventas - costo;
             if (gananciaMin != null && ganancia < gananciaMin) {
                 continue;
@@ -453,10 +484,13 @@ public class InformesDialog extends JDialog {
             model.addRow(new Object[]{
                 dia.format(SHOW_DAY),
                 "$" + money(ventas),
+                "$" + money(efectivo),
+                "$" + money(tarjeta),
                 "$" + money(costo),
                 "$" + money(ganancia),
                 Math.round(margen) + "%"
             });
+            rowDayKeys.add(diaSql.substring(0, Math.min(10, diaSql.length())));
             sumVentas += ventas;
             sumCosto += costo;
             dias++;
@@ -467,7 +501,10 @@ public class InformesDialog extends JDialog {
         lastGanancia = sumVentas - sumCosto;
         double margen = sumVentas > 0 ? (lastGanancia * 100.0 / sumVentas) : 0;
 
+        double[] pagos = sumarPorFormaPago(desde, hasta, filtrarTipo ? tipoFiltro : null);
         kpiVentas.setText("$" + money(sumVentas));
+        kpiEfectivo.setText("$" + money(pagos[0]));
+        kpiTarjeta.setText("$" + money(pagos[1]));
         kpiCosto.setText("$" + money(sumCosto));
         kpiGanancia.setText("$" + money(lastGanancia));
         kpiGanancia.setForeground(lastGanancia >= 0 ? UiTheme.SUCCESS : UiTheme.ACCENT);
@@ -628,8 +665,8 @@ public class InformesDialog extends JDialog {
                 new Object[]{"Imprimir", "Cerrar"}, "Cerrar");
         if (opcion == 0) {
             TicketPrinter.PrintResult result = TicketPrinter.printCopies(sb.toString() + "\n\n", 1);
-            JOptionPane.showMessageDialog(this, result.message);
-        }
+                JOptionPane.showMessageDialog(this, result.message);
+            }
     }
 
     private static String normalizeDay(String diaSql) {
@@ -637,6 +674,115 @@ public class InformesDialog extends JDialog {
             return null;
         }
         return diaSql.substring(0, Math.min(10, diaSql.length()));
+    }
+
+
+    private double[] sumarPorFormaPago(LocalDate desde, LocalDate hasta, String tipoFiltro) {
+        double efectivo = 0;
+        double tarjeta = 0;
+        String sql = "SELECT COALESCE(NULLIF(trim(forma_pago), ''), 'EFECTIVO') AS forma_pago, "
+                + "SUM(subtotal) AS total FROM venta_detalle "
+                + "WHERE DATE(fecha) >= ? AND DATE(fecha) <= ? "
+                + (tipoFiltro != null ? "AND tipo = ? " : "")
+                + "GROUP BY COALESCE(NULLIF(trim(forma_pago), ''), 'EFECTIVO')";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, desde.format(SQL_DAY));
+            ps.setString(2, hasta.format(SQL_DAY));
+            if (tipoFiltro != null) {
+                ps.setString(3, tipoFiltro);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String forma = rs.getString("forma_pago");
+                    double total = rs.getDouble("total");
+                    if ("TARJETA".equalsIgnoreCase(forma)) {
+                        tarjeta += total;
+                    } else {
+                        efectivo += total;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            // ignore
+        }
+        return new double[]{efectivo, tarjeta};
+    }
+
+    private void abrirDetalleDia(String diaSql) {
+        if (diaSql == null || diaSql.isBlank()) {
+            return;
+        }
+        DefaultTableModel det = new DefaultTableModel(
+                new Object[]{"Hora", "Producto", "Tipo", "Cant.", "Subtotal", "Pago"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        double totEfe = 0;
+        double totTar = 0;
+        String sql = "SELECT fecha, producto, COALESCE(tipo,'Otro') AS tipo, cantidad, subtotal, "
+                + "COALESCE(NULLIF(trim(forma_pago), ''), 'EFECTIVO') AS forma_pago "
+                + "FROM venta_detalle WHERE DATE(fecha) = ? ORDER BY fecha, id";
+        try (Connection connection = new conection().getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, diaSql);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String fecha = rs.getString("fecha");
+                    String hora = fecha != null && fecha.length() >= 19 ? fecha.substring(11, 19) : "";
+                    String pago = rs.getString("forma_pago");
+                    double sub = rs.getDouble("subtotal");
+                    if ("TARJETA".equalsIgnoreCase(pago)) {
+                        totTar += sub;
+                    } else {
+                        totEfe += sub;
+                    }
+                    det.addRow(new Object[]{
+                        hora,
+                        rs.getString("producto"),
+                        rs.getString("tipo"),
+                        rs.getInt("cantidad"),
+                        "$" + money(sub),
+                        pago
+                    });
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar detalle: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JDialog dlg = new JDialog(this, "Ventas del " + diaSql, true);
+        dlg.setSize(780, 520);
+        dlg.setLocationRelativeTo(this);
+        dlg.getContentPane().setBackground(UiTheme.BG);
+        dlg.setLayout(new BorderLayout(10, 10));
+        ((JPanel) dlg.getContentPane()).setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
+
+        JLabel resumen = new JLabel(String.format(
+                "<html><b>Total:</b> $%.0f &nbsp;&nbsp; <b>Efectivo:</b> $%.0f &nbsp;&nbsp; <b>Tarjeta:</b> $%.0f"
+                        + "<br><span style='color:gray'>Detalle de ítems vendidos ese día</span></html>",
+                totEfe + totTar, totEfe, totTar));
+        resumen.setFont(UiTheme.BODY);
+
+        JTable tDet = new JTable(det);
+        styleTable(tDet);
+        JScrollPane scroll = new JScrollPane(tDet);
+        UiTheme.styleScroll(scroll);
+
+        JButton cerrar = primaryButton("Cerrar");
+        cerrar.addActionListener(e -> dlg.dispose());
+        JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        south.setOpaque(false);
+        south.add(cerrar);
+
+        dlg.add(resumen, BorderLayout.NORTH);
+        dlg.add(scroll, BorderLayout.CENTER);
+        dlg.add(south, BorderLayout.SOUTH);
+        dlg.setVisible(true);
     }
 
     private static String money(double n) {

@@ -3,6 +3,7 @@ package proyectomago.panelclass;
 import connectDatabase.conection;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -17,8 +18,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Date;
 import java.awt.event.ActionListener;
+import javax.swing.Box;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -41,8 +44,12 @@ import javax.swing.border.EmptyBorder;
  */
 public class PrincipalPanel extends JPanel {
 
-    private final ArrayList<Pedido> listaPedidos = new ArrayList<>();
+    private static final int MAX_VENTAS = 8;
+
+    private final List<VentaEnCurso> ventas = new ArrayList<>();
+    private int ventaActiva = 0;
     private final DefaultListModel<Pedido> listModel = new DefaultListModel<>();
+    private JPanel tabsBar;
 
     private final JTextField txtCodigo = new JTextField();
     private final JComboBox<String> comboProducto = new JComboBox<>();
@@ -63,10 +70,14 @@ public class PrincipalPanel extends JPanel {
         setLayout(new BorderLayout(14, 14));
         setBorder(new EmptyBorder(16, 18, 16, 18));
 
+        ventas.add(new VentaEnCurso());
+        ventaActiva = 0;
+
         add(buildHeader(), BorderLayout.NORTH);
         add(buildBody(), BorderLayout.CENTER);
 
         aplicarBranding();
+        refrescarPestanas();
         comboProducto.addActionListener(productoListener);
         txtCodigo.addActionListener(e -> buscarPorCodigo());
         cargarMenu();
@@ -220,9 +231,13 @@ public class PrincipalPanel extends JPanel {
     }
 
     private JPanel buildOrderColumn() {
-        JPanel shell = UiTheme.sectionCard("Pedido actual");
+        JPanel shell = UiTheme.sectionCard("Ventas en curso");
         JPanel card = UiTheme.cardBody(shell);
         card.setLayout(new BorderLayout(0, 12));
+
+        tabsBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        tabsBar.setOpaque(false);
+        card.add(tabsBar, BorderLayout.NORTH);
 
         listaUI.setFont(UiTheme.BODY);
         listaUI.setBackground(UiTheme.SURFACE_ALT);
@@ -253,12 +268,15 @@ public class PrincipalPanel extends JPanel {
         buttons.setOpaque(false);
         JButton btnQuitar = secondaryButton("Quitar ítem");
         JButton btnVaciar = secondaryButton("Vaciar");
+        JButton btnPendiente = secondaryButton("Pasar a pendiente");
         JButton btnProcesar = primaryButton("Cobrar e imprimir");
         btnQuitar.addActionListener(e -> quitarSeleccionado());
         btnVaciar.addActionListener(e -> vaciarPedido());
+        btnPendiente.addActionListener(e -> pasarAPendiente());
         btnProcesar.addActionListener(e -> procesarOrden());
         buttons.add(btnQuitar);
         buttons.add(btnVaciar);
+        buttons.add(btnPendiente);
         buttons.add(btnProcesar);
 
         south.add(totalRow, BorderLayout.NORTH);
@@ -288,9 +306,10 @@ public class PrincipalPanel extends JPanel {
         int cantidad = (Integer) spinCantidad.getValue();
         String nota = txtNota.getText().trim();
         Pedido pedido = new Pedido(selected.toString(), precioTxt, nota, cantidad);
-        listaPedidos.add(pedido);
+        itemsActivos().add(pedido);
         listModel.addElement(pedido);
         actualizarTotal();
+        refrescarPestanas();
         spinCantidad.setValue(1);
         txtNota.setText("");
         txtCodigo.setText("");
@@ -341,27 +360,28 @@ public class PrincipalPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Seleccioná un ítem del pedido.");
             return;
         }
-        listaPedidos.remove(index);
+        itemsActivos().remove(index);
         listModel.remove(index);
         actualizarTotal();
+        refrescarPestanas();
     }
 
     private void vaciarPedido() {
-        if (listaPedidos.isEmpty()) {
+        if (itemsActivos().isEmpty()) {
             return;
         }
         int ok = JOptionPane.showConfirmDialog(this, "¿Vaciar el pedido actual?", "Confirmar",
                 JOptionPane.YES_NO_OPTION);
         if (ok == JOptionPane.YES_OPTION) {
-            listaPedidos.clear();
-            listModel.clear();
-            actualizarTotal();
+            itemsActivos().clear();
+            refrescarListaActiva();
+            refrescarPestanas();
         }
     }
 
     private void actualizarTotal() {
         double total = 0;
-        for (Pedido p : listaPedidos) {
+        for (Pedido p : itemsActivos()) {
             total += p.getSubtotal();
         }
         lblTotal.setText("$" + String.format("%.0f", total));
@@ -369,31 +389,38 @@ public class PrincipalPanel extends JPanel {
 
     private double getTotalPedido() {
         double total = 0;
-        for (Pedido p : listaPedidos) {
+        for (Pedido p : itemsActivos()) {
             total += p.getSubtotal();
         }
         return total;
     }
 
     private void procesarOrden() {
-        if (listaPedidos.isEmpty()) {
+        if (itemsActivos().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Agregá al menos un producto al pedido.");
             return;
         }
 
+        String formaPago = elegirFormaPago();
+        if (formaPago == null) {
+            return;
+        }
+
         double total = getTotalPedido();
-        String ticket = TicketPrinter.buildSaleTicket(listaPedidos);
+        String ticket = TicketPrinter.buildSaleTicket(new ArrayList<>(itemsActivos()));
 
         // Guardar venta SIEMPRE, aunque falle la impresora.
         ArrayList<String> sinStock = new ArrayList<>();
-        boolean guardado = registrarVenta(total, sinStock);
+        boolean guardado = registrarVenta(total, sinStock, formaPago);
         TicketPrinter.PrintResult result = TicketPrinter.printCopies(ticket, 1);
 
         if (!result.printed) {
             mostrarVistaPrevia("Vista previa del ticket", result.ticketText);
         }
 
-        String msg = (guardado ? "Venta registrada. " : "No se pudo guardar el informe. ")
+        String msg = (guardado
+                ? "Venta " + ("TARJETA".equals(formaPago) ? "con tarjeta" : "en efectivo") + " registrada. "
+                : "No se pudo guardar el informe. ")
                 + result.message;
         if (guardado && !sinStock.isEmpty()) {
             msg += "\n\nNo se descontó stock para: " + String.join(", ", sinStock)
@@ -403,18 +430,268 @@ public class PrincipalPanel extends JPanel {
                 guardado ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
 
         if (guardado) {
-            listaPedidos.clear();
-            listModel.clear();
-            actualizarTotal();
             txtNota.setText("");
+            cerrarVentaCobrada();
         }
     }
 
+
+    private List<Pedido> itemsActivos() {
+        return ventas.get(ventaActiva).getItems();
+    }
+
+    private VentaEnCurso ventaActual() {
+        return ventas.get(ventaActiva);
+    }
+
+    private void refrescarListaActiva() {
+        listModel.clear();
+        for (Pedido p : itemsActivos()) {
+            listModel.addElement(p);
+        }
+        actualizarTotal();
+    }
+
+    private void refrescarPestanas() {
+        if (tabsBar == null) {
+            return;
+        }
+        tabsBar.removeAll();
+        for (int i = 0; i < ventas.size(); i++) {
+            final int idx = i;
+            VentaEnCurso v = ventas.get(i);
+            boolean activa = i == ventaActiva;
+            JButton tab = activa ? primaryButton(v.tabLabel()) : secondaryButton(v.tabLabel());
+            tab.setToolTipText(v.resumenCorto());
+            tab.addActionListener(e -> seleccionarVenta(idx));
+            tabsBar.add(tab);
+            if (ventas.size() > 1) {
+                JButton close = secondaryButton("×");
+                close.setMargin(new Insets(2, 6, 2, 6));
+                close.setToolTipText("Cerrar esta venta");
+                close.addActionListener(e -> cerrarPestaña(idx));
+                tabsBar.add(close);
+            }
+        }
+        JButton btnNueva = secondaryButton("+");
+        btnNueva.setToolTipText("Nueva venta");
+        btnNueva.addActionListener(e -> nuevaVentaVacia());
+        tabsBar.add(Box.createHorizontalStrut(6));
+        tabsBar.add(btnNueva);
+        tabsBar.revalidate();
+        tabsBar.repaint();
+    }
+
+    private void seleccionarVenta(int idx) {
+        if (idx < 0 || idx >= ventas.size() || idx == ventaActiva) {
+            return;
+        }
+        ventaActiva = idx;
+        refrescarListaActiva();
+        refrescarPestanas();
+        txtCodigo.requestFocusInWindow();
+    }
+
+    private void pasarAPendiente() {
+        if (itemsActivos().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "La venta actual está vacía.");
+            return;
+        }
+        if (ventas.size() >= MAX_VENTAS) {
+            JOptionPane.showMessageDialog(this,
+                    "Máximo " + MAX_VENTAS + " ventas en curso. Cobrálas o cerrá alguna pestaña.");
+            return;
+        }
+        ventas.add(new VentaEnCurso());
+        ventaActiva = ventas.size() - 1;
+        refrescarListaActiva();
+        refrescarPestanas();
+        txtCodigo.requestFocusInWindow();
+    }
+
+    private void nuevaVentaVacia() {
+        if (ventas.size() >= MAX_VENTAS) {
+            JOptionPane.showMessageDialog(this, "Máximo " + MAX_VENTAS + " ventas en curso.");
+            return;
+        }
+        // Si la actual está vacía, no duplicar vacías
+        if (itemsActivos().isEmpty()) {
+            refrescarPestanas();
+            return;
+        }
+        ventas.add(new VentaEnCurso());
+        ventaActiva = ventas.size() - 1;
+        refrescarListaActiva();
+        refrescarPestanas();
+    }
+
+    private void cerrarPestaña(int idx) {
+        if (idx < 0 || idx >= ventas.size()) {
+            return;
+        }
+        VentaEnCurso v = ventas.get(idx);
+        if (!v.isEmpty()) {
+            int ok = JOptionPane.showConfirmDialog(this,
+                    "¿Cerrar y descartar «" + v.tabLabel() + "»?",
+                    "Cerrar venta", JOptionPane.YES_NO_OPTION);
+            if (ok != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+        if (ventas.size() == 1) {
+            v.getItems().clear();
+            refrescarListaActiva();
+            refrescarPestanas();
+            return;
+        }
+        ventas.remove(idx);
+        if (ventaActiva >= ventas.size()) {
+            ventaActiva = ventas.size() - 1;
+        } else if (idx < ventaActiva) {
+            ventaActiva--;
+        } else if (idx == ventaActiva) {
+            // keep same index (next tab slides in) or previous
+            ventaActiva = Math.min(ventaActiva, ventas.size() - 1);
+        }
+        refrescarListaActiva();
+        refrescarPestanas();
+    }
+
+    private void cerrarVentaCobrada() {
+        if (ventas.size() == 1) {
+            itemsActivos().clear();
+            refrescarListaActiva();
+            refrescarPestanas();
+            return;
+        }
+        ventas.remove(ventaActiva);
+        if (ventaActiva >= ventas.size()) {
+            ventaActiva = ventas.size() - 1;
+        }
+        refrescarListaActiva();
+        refrescarPestanas();
+    }
+
+    /** Ventas con ítems (pendientes u otras pestañas). */
+    public int countPendientesConItems() {
+        int n = 0;
+        for (VentaEnCurso v : ventas) {
+            if (!v.isEmpty()) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /**
+     * Antes de cerrar caja: cobrar o eliminar pendientes.
+     * @return true si ya no quedan ítems pendientes y se puede cerrar.
+     */
+    public boolean resolverPendientesParaCierre(Component parent) {
+        while (countPendientesConItems() > 0) {
+            List<VentaEnCurso> pendientes = new ArrayList<>();
+            for (VentaEnCurso v : ventas) {
+                if (!v.isEmpty()) {
+                    pendientes.add(v);
+                }
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Hay ").append(pendientes.size()).append(" venta(s) pendiente(s):\n\n");
+            for (VentaEnCurso v : pendientes) {
+                sb.append("• ").append(v.resumenCorto()).append("\n");
+            }
+            sb.append("\nDebés cobrarlas o eliminarlas antes de cerrar la caja.");
+            Object[] opts = {"Cobrar la primera", "Eliminar todas", "Cancelar cierre"};
+            int sel = JOptionPane.showOptionDialog(parent, sb.toString(), "Ventas pendientes",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, opts, opts[0]);
+            if (sel == 2 || sel == JOptionPane.CLOSED_OPTION) {
+                return false;
+            }
+            if (sel == 1) {
+                // eliminar todas con ítems; dejar una vacía
+                ventas.removeIf(v -> !v.isEmpty());
+                if (ventas.isEmpty()) {
+                    ventas.add(new VentaEnCurso());
+                }
+                ventaActiva = 0;
+                refrescarListaActiva();
+                refrescarPestanas();
+                return true;
+            }
+            // Cobrar la primera pendiente
+            VentaEnCurso primera = pendientes.get(0);
+            int idx = ventas.indexOf(primera);
+            seleccionarVenta(idx);
+            // Cerrar diálogo de caja implícito: el caller debe cerrarse si devolvemos false para ir a cobrar
+            // Acá cobramos inline:
+            if (!cobrarVentaActivaDesde(parent)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Cobra la pestaña activa (mismo flujo que el botón). */
+    public boolean cobrarVentaActivaDesde(Component parent) {
+        if (itemsActivos().isEmpty()) {
+            return true;
+        }
+        String formaPago = elegirFormaPago();
+        if (formaPago == null) {
+            return false;
+        }
+        double total = getTotalPedido();
+        String ticket = TicketPrinter.buildSaleTicket(new ArrayList<>(itemsActivos()));
+        ArrayList<String> sinStock = new ArrayList<>();
+        boolean guardado = registrarVenta(total, sinStock, formaPago);
+        TicketPrinter.PrintResult result = TicketPrinter.printCopies(ticket, 1);
+        String msg = (guardado
+                ? "Venta " + ("TARJETA".equals(formaPago) ? "con tarjeta" : "en efectivo") + " registrada. "
+                : "No se pudo guardar. ")
+                + result.message;
+        if (guardado && !sinStock.isEmpty()) {
+            msg += "\n\nNo se descontó stock para: " + String.join(", ", sinStock);
+        }
+        JOptionPane.showMessageDialog(parent, msg, "Pedido procesado",
+                guardado ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+        if (!guardado) {
+            return false;
+        }
+        cerrarVentaCobrada();
+        return true;
+    }
+
+
+    /** @return EFECTIVO, TARJETA o null si canceló. */
+    private String elegirFormaPago() {
+        Object[] opciones = {"Efectivo", "Tarjeta"};
+        int sel = JOptionPane.showOptionDialog(
+                this,
+                "¿Cómo pagó el cliente?",
+                "Forma de pago",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                opciones,
+                opciones[0]);
+        if (sel == 0) {
+            return "EFECTIVO";
+        }
+        if (sel == 1) {
+            return "TARJETA";
+        }
+        return null;
+    }
+
     private boolean registrarVenta(double total) {
-        return registrarVenta(total, null);
+        return registrarVenta(total, null, "EFECTIVO");
     }
 
     private boolean registrarVenta(double total, ArrayList<String> sinStock) {
+        return registrarVenta(total, sinStock, "EFECTIVO");
+    }
+
+    private boolean registrarVenta(double total, ArrayList<String> sinStock, String formaPago) {
         Date ahora = new Date();
         String totalStr = String.valueOf(total);
         try (Connection connection = new conection().getConnection()) {
@@ -425,7 +702,7 @@ public class PrincipalPanel extends JPanel {
                 } else {
                     sumoInforme(connection, ahora, totalStr);
                 }
-                registrarDetalleVenta(connection, ahora);
+                registrarDetalleVenta(connection, ahora, formaPago);
                 descontarStockVenta(connection, sinStock);
                 connection.commit();
                 return true;
@@ -447,7 +724,7 @@ public class PrincipalPanel extends JPanel {
         String sql = "UPDATE stock SET cantidad = MAX(cantidad - ?, 0) "
                 + "WHERE id = (SELECT id FROM stock WHERE lower(nombre) = lower(?) ORDER BY id LIMIT 1)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            for (Pedido p : listaPedidos) {
+            for (Pedido p : itemsActivos()) {
                 ps.setInt(1, p.getCantidad());
                 ps.setString(2, p.getNombreProd());
                 int updated = ps.executeUpdate();
@@ -462,15 +739,16 @@ public class PrincipalPanel extends JPanel {
     }
 
     /** Guarda ítems con tipo/costo para informes de ganancia y gráficos. */
-    private void registrarDetalleVenta(Connection connection, Date fecha) throws SQLException {
+    private void registrarDetalleVenta(Connection connection, Date fecha, String formaPago) throws SQLException {
         String ahora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(fecha);
+        String pago = (formaPago == null || formaPago.isBlank()) ? "EFECTIVO" : formaPago;
         String sqlMeta = "SELECT COALESCE(tipo, 'Otro') AS tipo, COALESCE(costo, 0) AS costo "
                 + "FROM menuPrecios WHERE nombre = ? ORDER BY id LIMIT 1";
         String sqlIns = "INSERT INTO venta_detalle "
-                + "(fecha, producto, tipo, cantidad, precio_unit, costo_unit, subtotal, costo_total) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                + "(fecha, producto, tipo, cantidad, precio_unit, costo_unit, subtotal, costo_total, forma_pago) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        for (Pedido p : listaPedidos) {
+        for (Pedido p : itemsActivos()) {
             String tipo = "Otro";
             double costoUnit = 0;
             try (PreparedStatement meta = connection.prepareStatement(sqlMeta)) {
@@ -497,6 +775,7 @@ public class PrincipalPanel extends JPanel {
                 ins.setDouble(6, costoUnit);
                 ins.setDouble(7, subtotal);
                 ins.setDouble(8, costoTotal);
+                ins.setString(9, pago);
                 ins.executeUpdate();
             }
         }
@@ -515,7 +794,7 @@ public class PrincipalPanel extends JPanel {
     private void abrirCaja() {
         Window w = SwingUtilities.getWindowAncestor(this);
         JFrame frame = (w instanceof JFrame) ? (JFrame) w : null;
-        CajaDialog dialog = new CajaDialog(frame);
+        CajaDialog dialog = new CajaDialog(frame, this);
         dialog.setVisible(true);
     }
 

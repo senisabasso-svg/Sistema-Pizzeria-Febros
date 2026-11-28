@@ -49,9 +49,15 @@ public class CajaDialog extends JDialog {
     private double montoApertura;
     private String fechaApertura;
     private String vendedorAbierto = "";
+    private final PrincipalPanel pos;
 
     public CajaDialog(JFrame owner) {
+        this(owner, null);
+    }
+
+    public CajaDialog(JFrame owner, PrincipalPanel pos) {
         super(owner, "Caja diaria · ingresos y egresos", true);
+        this.pos = pos;
         setSize(860, 620);
         setMinimumSize(new Dimension(780, 560));
         setLocationRelativeTo(owner);
@@ -74,7 +80,7 @@ public class CajaDialog extends JDialog {
         tableMov.getColumnModel().getColumn(0).setMaxWidth(0);
         tableMov.getColumnModel().getColumn(0).setPreferredWidth(0);
 
-        modelVentas = new DefaultTableModel(new Object[]{"Hora", "Producto", "Cant.", "Subtotal"}, 0) {
+        modelVentas = new DefaultTableModel(new Object[]{"Hora", "Producto", "Cant.", "Subtotal", "Pago"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -262,16 +268,17 @@ public class CajaDialog extends JDialog {
     private void actualizarResumen() {
         double entradas = sumarMovimientos("ENTRADA");
         double salidas = sumarMovimientos("SALIDA");
-        double ventas = ventasDelDia();
-        double esperado = montoApertura + ventas + entradas - salidas;
+        double ventasEfectivo = ventasPorForma("EFECTIVO");
+        double ventasTarjeta = ventasPorForma("TARJETA");
+        double esperado = montoApertura + ventasEfectivo + entradas - salidas;
 
         String quien = vendedorAbierto.isBlank() ? "" : " · " + vendedorAbierto;
         lblEstado.setText("Caja abierta · #" + cajaIdAbierta + quien);
         lblEstado.setForeground(UiTheme.SUCCESS);
         lblResumen.setText(String.format(
-                "<html>Apertura $%.0f · Ventas $%.0f · Entradas $%.0f · Salidas $%.0f<br>"
-                        + "<b>Esperado en caja $%.0f</b></html>",
-                montoApertura, ventas, entradas, salidas, esperado));
+                "<html>Apertura $%.0f · Efectivo $%.0f · Tarjeta $%.0f · Entradas $%.0f · Salidas $%.0f<br>"
+                        + "<b>Esperado en efectivo $%.0f</b> (tarjeta no suma al arqueo)</html>",
+                montoApertura, ventasEfectivo, ventasTarjeta, entradas, salidas, esperado));
     }
 
     private void cargarVentasTurno() {
@@ -279,8 +286,9 @@ public class CajaDialog extends JDialog {
         if (fechaApertura == null || fechaApertura.isBlank()) {
             return;
         }
-        String sql = "SELECT fecha, producto, cantidad, subtotal FROM venta_detalle "
-                + "WHERE fecha >= ? ORDER BY id DESC";
+        String sql = "SELECT fecha, producto, cantidad, subtotal, "
+                + "COALESCE(NULLIF(trim(forma_pago), ''), 'EFECTIVO') AS forma_pago "
+                + "FROM venta_detalle WHERE fecha >= ? ORDER BY id DESC";
         try (Connection connection = new conection().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, fechaApertura);
@@ -292,7 +300,8 @@ public class CajaDialog extends JDialog {
                         hora,
                         rs.getString("producto"),
                         rs.getInt("cantidad"),
-                        "$" + String.format("%.0f", rs.getDouble("subtotal"))
+                        "$" + String.format("%.0f", rs.getDouble("subtotal")),
+                        rs.getString("forma_pago")
                     });
                 }
             }
@@ -319,15 +328,28 @@ public class CajaDialog extends JDialog {
         }
     }
 
-    /** Ventas desde que se abrió esta caja, aunque el turno cruce la medianoche. */
-    private double ventasDelDia() {
+    /**
+     * Ventas del turno por forma de pago.
+     * Legacy sin forma_pago cuenta como EFECTIVO.
+     */
+    private double ventasPorForma(String forma) {
         if (fechaApertura == null || fechaApertura.isBlank()) {
             return 0;
         }
-        String sql = "SELECT COALESCE(SUM(subtotal), 0) FROM venta_detalle WHERE fecha >= ?";
+        String sql;
+        if ("EFECTIVO".equals(forma)) {
+            sql = "SELECT COALESCE(SUM(subtotal), 0) FROM venta_detalle WHERE fecha >= ? "
+                    + "AND (forma_pago IS NULL OR trim(forma_pago) = '' OR upper(forma_pago) = 'EFECTIVO')";
+        } else {
+            sql = "SELECT COALESCE(SUM(subtotal), 0) FROM venta_detalle WHERE fecha >= ? "
+                    + "AND upper(forma_pago) = ?";
+        }
         try (Connection connection = new conection().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, fechaApertura);
+            if (!"EFECTIVO".equals(forma)) {
+                ps.setString(2, forma);
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getDouble(1) : 0;
             }
@@ -429,14 +451,36 @@ public class CajaDialog extends JDialog {
             return;
         }
 
+        if (pos != null && pos.countPendientesConItems() > 0) {
+            boolean ok = pos.resolverPendientesParaCierre(this);
+            if (!ok) {
+                // Usuario canceló o debe terminar de cobrar en el POS
+                if (pos.countPendientesConItems() > 0) {
+                    JOptionPane.showMessageDialog(this,
+                            "Quedan ventas pendientes. Cerrá esta ventana, cobralas o eliminalas, y volvé a cerrar caja.");
+                    dispose();
+                }
+                return;
+            }
+        }
+
         double entradas = sumarMovimientos("ENTRADA");
         double salidas = sumarMovimientos("SALIDA");
-        double ventas = ventasDelDia();
-        double esperado = montoApertura + ventas + entradas - salidas;
+        double ventasEfectivo = ventasPorForma("EFECTIVO");
+        double ventasTarjeta = ventasPorForma("TARJETA");
+        double esperado = montoApertura + ventasEfectivo + entradas - salidas;
 
         String contadoTxt = (String) JOptionPane.showInputDialog(
                 this,
-                "Esperado en caja: $" + String.format("%.0f", esperado)
+                "Resumen del turno\n"
+                        + "------------------\n"
+                        + "Apertura: $" + String.format("%.0f", montoApertura) + "\n"
+                        + "Ventas efectivo: $" + String.format("%.0f", ventasEfectivo) + "\n"
+                        + "Ventas tarjeta: $" + String.format("%.0f", ventasTarjeta)
+                        + " (no suman al arqueo)\n"
+                        + "Entradas: $" + String.format("%.0f", entradas) + "\n"
+                        + "Salidas: $" + String.format("%.0f", salidas) + "\n"
+                        + "Esperado en efectivo: $" + String.format("%.0f", esperado)
                         + "\n\n¿Cuánto contaste en efectivo?",
                 "Cerrar caja",
                 JOptionPane.QUESTION_MESSAGE,
@@ -465,10 +509,11 @@ public class CajaDialog extends JDialog {
             ps.setInt(5, cajaIdAbierta);
             ps.executeUpdate();
 
-            String msg = "Caja cerrada.\n"
-                    + "Esperado: $" + String.format("%.0f", esperado) + "\n"
-                    + "Contado: $" + String.format("%.0f", contado) + "\n"
-                    + "Diferencia: $" + String.format("%.0f", diferencia);
+            String msg = "Caja cerrada.\n\n"
+                    + "Efectivo esperado: $" + String.format("%.0f", esperado) + "\n"
+                    + "Efectivo contado: $" + String.format("%.0f", contado) + "\n"
+                    + "Diferencia efectivo: $" + String.format("%.0f", diferencia) + "\n"
+                    + "Ventas con tarjeta: $" + String.format("%.0f", ventasTarjeta);
             JOptionPane.showMessageDialog(this, msg, "Cierre de caja", JOptionPane.INFORMATION_MESSAGE);
             refrescar();
         } catch (SQLException ex) {

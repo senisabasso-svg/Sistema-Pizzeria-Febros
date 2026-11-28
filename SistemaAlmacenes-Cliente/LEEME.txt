@@ -1,6 +1,6 @@
 GESTION ALMACENES - INSTALACION EN PC DEL CLIENTE
 ==================================================
-Actualizado: 20/11/2026 (correcciones de cantidad, compras, stock, caja, productos)
+Actualizado: 27/11/2026 (Version 0.0.1 estable)
 
 REQUISITO
 - Tener instalado Java 17 o superior
